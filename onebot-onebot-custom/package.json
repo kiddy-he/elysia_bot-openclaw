@@ -1,0 +1,10 @@
+{
+  "name": "openclaw-onebot-custom-source",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/deploy.mjs --check",
+    "deploy": "node scripts/deploy.mjs --deploy",
+    "test": "node --test tests/*.test.mjs"
+  }
+}

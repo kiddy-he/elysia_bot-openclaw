@@ -12,14 +12,18 @@ import { getImageMetadata, resizeToJpeg } from "openclaw/plugin-sdk/media-runtim
 import { extractGuestImagePrompt, guestImageCooldownRemaining, GUEST_IMAGE_PROMPT_MAX_CHARS } from "./guest-image-policy.js";
 import { reactToMessage, sendText as sendOutboundText, sendImage, sendRecord, startApprovalBarrier, expectApprovalResult, resolveApprovalResult, clearApprovalBarrier } from "./outbound.js";
 import { cleanupVoiceFiles, processVoiceSegments } from "./voice.js";
+import { loadAppConfig } from "./app-config.js";
+import { loadModelRouting } from "./model-routing.js";
+import { loadRoleRouting } from "./role-routing.js";
 export { cleanupVoiceFiles, convertAmrToMp3, convertSilkToMp3, downloadVoiceFile, ensureVoiceTmpDir, isAmrFormat, isSilkFormat, processVoiceSegments, } from "./voice.js";
 // Reconnect configuration
 const RECONNECT_DELAYS = [1000, 2000, 5000, 10000, 30000, 60000];
 const MAX_RECONNECT_ATTEMPTS = 100;
 // Message batching — aligned with telegram text fragment gap
-const BATCH_GAP_MS = 1500;
-const BATCH_MAX_MESSAGES = 12;
-const BATCH_MAX_CHARS = 50000;
+const APP_CONFIG = loadAppConfig();
+const BATCH_GAP_MS = APP_CONFIG.batchGapMs;
+const BATCH_MAX_MESSAGES = APP_CONFIG.batchMaxMessages;
+const BATCH_MAX_CHARS = APP_CONFIG.batchMaxChars;
 const execFileAsync = promisify(execFile);
 const RELAXED_REVIEW_PROMPT_PATH = join(process.env.HOME ?? "/root", ".openclaw", "relaxed-approval-prompt.txt");
 let relaxedReviewSeq = 0;
@@ -56,20 +60,17 @@ const GROK_TEXT_FALLBACK_AGENT_ID = "onebot-grok-text-fallback";
 const NORMAL_CONVERSATION_MODE = "normal";
 const NSFW_CONVERSATION_MODE = "nsfw";
 const GROK_TEXT_ROUTE = Object.freeze({ model: "grok/grok-4.7", thinking: "high" });
-const GUEST_REPLY_INTERVAL_MS = 60 * 1000;
+const GUEST_REPLY_INTERVAL_MS = APP_CONFIG.guestReplyIntervalMs;
 const GUEST_RATE_MAX_ENTRIES = 4096;
 const GUEST_IMAGE_RATE_PATH = join(process.env.HOME ?? "/root", ".openclaw", "state", "onebot-guest-image-rate.json");
 // Keep a margin before the channel's response deadline so cleanup and the
 // failure reply do not race an already-expired upstream request.
-const DEFAULT_RESPONSE_TIMEOUT_MS = 150 * 1000;
-const IMAGE_ANALYSIS_RESPONSE_TIMEOUT_MS = 250 * 1000;
-const IMAGE_RESPONSE_TIMEOUT_MS = 10 * 60 * 1000;
+const DEFAULT_RESPONSE_TIMEOUT_MS = APP_CONFIG.defaultResponseTimeoutMs;
+const IMAGE_ANALYSIS_RESPONSE_TIMEOUT_MS = APP_CONFIG.imageAnalysisResponseTimeoutMs;
+const IMAGE_RESPONSE_TIMEOUT_MS = APP_CONFIG.imageResponseTimeoutMs;
 const PEER_CONTINUATION_INITIAL_SCORE = 5;
 const GEMINI_WEB_SEARCH_MARKER = "[[OPENCLAW_ANTIGRAVITY_WEB_SEARCH_REQUIRED]]";
-const MODEL_ROUTING_PATH = join(process.env.HOME ?? "/root", ".openclaw", "onebot-model-routing.json");
 const ROLE_CAPABILITIES_PATH = join(process.env.HOME ?? "/root", ".openclaw", "workspace", "role-capabilities", "ROLE_CAPABILITIES.md");
-const ROLE_ROUTING_PATH = join(process.env.HOME ?? "/root", ".openclaw", "onebot-role-routing.json");
-const VALID_THINKING_LEVELS = new Set(["off", "minimal", "low", "medium", "high", "xhigh", "max"]);
 // One Gateway may host multiple OneBot accounts; approval state is shared, so
 // polling must be shared too and routed by the approval session owner.
 const approvalPollCoordinator = (() => {
@@ -140,21 +141,6 @@ const approvalPollCoordinator = (() => {
         },
     };
 })();
-function expandHomePath(value) {
-    const raw = String(value ?? "").trim();
-    return raw.startsWith("~/") ? join(process.env.HOME ?? "/root", raw.slice(2)) : raw;
-}
-function loadPeerSoul(pathValue) {
-    const path = expandHomePath(pathValue);
-    if (!path)
-        return "";
-    try {
-        return readFileSync(path, "utf8").trim().slice(0, 8000);
-    }
-    catch {
-        return "";
-    }
-}
 function loadSharedRoleCapabilities() {
     try {
         return readFileSync(ROLE_CAPABILITIES_PATH, "utf8").trim().slice(0, 16000);
@@ -164,95 +150,7 @@ function loadSharedRoleCapabilities() {
     }
 }
 const SHARED_ROLE_CAPABILITIES = loadSharedRoleCapabilities();
-function loadRoleRouting() {
-    const defaults = {
-        groups: [],
-        adminIds: [],
-        roles: {
-            elysia: {
-                agentId: "main",
-                peerAgentId: "onebot-elysia-peer",
-                peerSoulPath: "~/.openclaw/workspace/PEER_SOUL.md",
-                accountId: "default",
-                displayName: "爱莉希雅",
-                allowNsfw: true,
-                names: ["爱莉希雅", "爱莉"],
-                selfIds: [],
-            },
-            yuexia: {
-                agentId: "onebot-yuexia",
-                peerAgentId: "onebot-yuexia-peer",
-                peerSoulPath: "~/.openclaw/workspace/onebot-yuexia/PEER_SOUL.md",
-                accountId: "yuexia",
-                displayName: "月下初拥",
-                allowNsfw: false,
-                names: ["月下初拥", "月下"],
-                selfIds: [],
-            },
-        },
-    };
-    try {
-        const parsed = JSON.parse(readFileSync(ROLE_ROUTING_PATH, "utf8"));
-        const roles = {};
-        for (const [roleId, role] of Object.entries({ ...defaults.roles, ...(parsed.roles ?? {}) })) {
-            if (!role || typeof role !== "object")
-                continue;
-            const agentId = String(role.agentId ?? "").trim();
-            const accountId = String(role.accountId ?? "").trim();
-            if (!agentId || !accountId)
-                continue;
-            roles[roleId] = {
-                enabled: role.enabled !== false,
-                agentId,
-                peerAgentId: String(role.peerAgentId ?? "").trim(),
-                peerSoulPath: String(role.peerSoulPath ?? "").trim(),
-                peerSoul: loadPeerSoul(role.peerSoulPath),
-                accountId,
-                displayName: String(role.displayName ?? roleId).trim(),
-                allowNsfw: role.allowNsfw !== false,
-                names: Array.isArray(role.names) ? role.names.map(String).map((value) => value.trim()).filter(Boolean) : [],
-                selfIds: Array.isArray(role.selfIds) ? role.selfIds.map(String).map((value) => value.trim()).filter(Boolean) : [],
-            };
-        }
-        return {
-            groups: parsed.groups ?? defaults.groups,
-            adminIds: Array.isArray(parsed.adminIds) ? parsed.adminIds.map(String).map((value) => value.trim()).filter(Boolean) : defaults.adminIds,
-            roles,
-        };
-    }
-    catch {
-        return defaults;
-    }
-}
 const ROLE_ROUTING = loadRoleRouting();
-function loadModelRouting() {
-    const config = JSON.parse(readFileSync(MODEL_ROUTING_PATH, "utf8"));
-    const presetName = String(config.activePreset ?? "");
-    const preset = config.presets?.[presetName];
-    if (!preset)
-        throw new Error(`OneBot model routing preset not found: ${presetName || "(empty)"}`);
-    const normalizeRoute = (route, label) => {
-        const model = typeof route?.model === "string" ? route.model.trim() : "";
-        const thinking = typeof route?.thinking === "string" ? route.thinking.trim() : "";
-        if (!/^[^/\s]+\/[^/\s]+$/u.test(model))
-            throw new Error(`Invalid ${label}.model in ${MODEL_ROUTING_PATH}`);
-        if (!VALID_THINKING_LEVELS.has(thinking))
-            throw new Error(`Invalid ${label}.thinking in ${MODEL_ROUTING_PATH}`);
-        return { model, thinking };
-    };
-    const normalizeRoutes = (routes, label) => {
-        if (!Array.isArray(routes) || routes.length === 0)
-            throw new Error(`${label} must contain at least one model route`);
-        return routes.map((route, index) => normalizeRoute(route, `${label}[${index}]`));
-    };
-    return {
-        presetName,
-        conversation: normalizeRoute(preset.conversation, "conversation"),
-        textReview: normalizeRoute(preset.textReview, "textReview"),
-        contentFallbacks: normalizeRoutes(preset.contentFallbacks, "contentFallbacks"),
-        errorFallbacks: normalizeRoutes(preset.errorFallbacks, "errorFallbacks"),
-    };
-}
 const MODEL_ROUTING = loadModelRouting();
 const TEXT_REVIEW_ROUTE = MODEL_ROUTING.textReview;
 const TEXT_CONTENT_FALLBACKS = MODEL_ROUTING.contentFallbacks;
