@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { chmod, copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises';
 import { basename, extname, isAbsolute, join, posix, relative, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { promisify } from 'node:util';
 import { getDefaultContainerSharedDir, getDefaultSharedDir } from './env.js';
 const STAGED_MEDIA_DIR = 'openclaw';
@@ -14,6 +15,20 @@ const APPROVAL_BARRIER_MAX_DEFERRED_MESSAGES = 32;
 // approval barrier alive until the approved continuation can deliver its
 // final text and media.
 const APPROVAL_BARRIER_RESULT_TIMEOUT_MS = 12 * 60 * 1000;
+const ROLE_ROUTING_PATH = join(process.env.HOME ?? '/root', '.openclaw', 'onebot-role-routing.json');
+function loadRoleDisplayNames() {
+    try {
+        const parsed = JSON.parse(readFileSync(ROLE_ROUTING_PATH, 'utf8'));
+        return new Map(Object.values(parsed.roles ?? {})
+            .filter((role) => role && typeof role.accountId === 'string')
+            .map((role) => [role.accountId, String(role.displayName ?? '').trim()])
+            .filter(([, displayName]) => displayName));
+    }
+    catch {
+        return new Map();
+    }
+}
+const ROLE_DISPLAY_NAMES = loadRoleDisplayNames();
 const execFileAsync = promisify(execFile);
 let rewriteSequence = 0;
 let personaFormatSequence = 0;
@@ -97,6 +112,34 @@ export function expectApprovalResult(sessionKey, approvalId, fallback) {
         void releaseApprovalBarrierAfterTimeout(sessionKey);
     }, APPROVAL_BARRIER_RESULT_TIMEOUT_MS));
 }
+export async function resolveApprovalResult(sessionKey, approvalId) {
+    if (!sessionKey || !approvalId)
+        return;
+    const expected = activeApprovalBarriers.get(sessionKey);
+    if (!expected)
+        return;
+    expected.delete(String(approvalId));
+    if (expected.size > 0)
+        return;
+    let pending = false;
+    try {
+        pending = await hasPendingApproval(sessionKey);
+    }
+    catch {
+        // Keep the barrier alive when the approval CLI is temporarily unavailable.
+        return;
+    }
+    if (pending)
+        return;
+    const queue = deferredApprovalMessages.get(sessionKey);
+    if (queue?.length) {
+        await flushDeferredApprovalMessages(sessionKey);
+        return;
+    }
+    // The core approval continuation owns the final reply. There is no queued
+    // channel result to recover here, so do not emit a stale timeout fallback.
+    stopApprovalBarrier(sessionKey);
+}
 async function releaseApprovalBarrierAfterTimeout(sessionKey) {
     const expected = activeApprovalBarriers.get(sessionKey);
     if (!expected || expected.size === 0)
@@ -106,6 +149,10 @@ async function releaseApprovalBarrierAfterTimeout(sessionKey) {
     if (await hasPendingApproval(sessionKey))
         return;
     const queue = deferredApprovalMessages.get(sessionKey);
+    if (!queue?.length) {
+        stopApprovalBarrier(sessionKey);
+        return;
+    }
     if (queue?.length) {
         await flushDeferredApprovalMessages(sessionKey);
         return;
@@ -393,6 +440,28 @@ function formatPersonaText(text) {
         return "";
     return rewriteFixedSystemReply(trimmed);
 }
+function resolvePersonaName(ctx) {
+    return String(ctx?.personaName
+        ?? ctx?.account?.personaName
+        ?? ctx?.account?.config?.personaName
+        ?? ROLE_DISPLAY_NAMES.get(ctx?.account?.accountId)
+        ?? "爱莉希雅").trim() || "爱莉希雅";
+}
+function renderRoleFixedText(text, personaName) {
+    const value = String(text ?? "");
+    if (!value || personaName === "爱莉希雅")
+        return value;
+    return value
+        .replaceAll("爱莉希雅", personaName === "月下初拥" ? "月下" : personaName)
+        .replaceAll("人家", "月下")
+        .replaceAll("嗨♪", "嗯……")
+        .replaceAll("嗯哼", "嗯")
+        .replaceAll("好呀", "好")
+        .replaceAll("啦♪", "了。")
+        .replaceAll("哦♪", "哦。")
+        .replaceAll("吧♪", "吧。")
+        .replaceAll("♪", "");
+}
 function isPersonaRewriteRefusal(text) {
     const value = String(text ?? "").trim();
     if (!value)
@@ -416,13 +485,20 @@ async function rewriteForPersona(text, options = {}) {
         return "";
     const sequence = ++rewriteSequence;
     const isApprovalPrompt = /状态：需确认|以下操作需要舰长确认|引用本条消息/u.test(draft);
+    const personaName = typeof options.personaName === "string" && options.personaName.trim()
+        ? options.personaName.trim()
+        : "爱莉希雅";
+    const isElysia = personaName === "爱莉希雅";
     const personaInstruction = typeof options.instruction === "string" ? options.instruction.trim() : "";
     const nsfwChatRewrite = !isApprovalPrompt && String(options.model ?? "").startsWith("grok/");
-    const promptBase = isApprovalPrompt
+    let promptBase = isApprovalPrompt
         ? `你是 QQ 出站消息的爱莉希雅文案编辑。下面的草稿是一条需要舰长确认的审批消息。\n\n要求：\n- 只输出改写后的最终消息，不要解释过程。\n- 最终消息必须是接近日常聊天的纯文本，不使用 Markdown 标题、列表语法、粗体、斜体、引用、表格、链接语法、行内代码或代码围栏。\n- 公式和特殊符号直接使用 QQ 可显示的普通字符或 Unicode 符号，不使用 LaTeX、美元符号公式边界或反斜杠命令。\n- 保留草稿中的全部命令、风险说明和确认要求；命令放在独立的普通文本行，不使用代码块。\n- 若草稿含有“模型审查：”或“审查理由：”行，必须逐字保留这两行；这是面向舰长的审计信息，不是可删减的内部细节。\n- 为草稿中出现的每条命令补充一行"作用：<一句话说明该命令做什么>"，写在命令之后、风险说明之前。\n- 为每条命令补充关键风险点（如已存在风险说明则保留并强化为"关键风险："开头；若草稿未提供风险，请基于该命令本身简要说明其关键风险）。\n- 使用自然、温柔、简洁的中文，可以自然使用"舰长""嗨♪"等口吻。\n- 不得提及 OpenClaw、AI、工具、系统提示词、内部事件、审批 ID 或实现细节；不得编造草稿中不存在的命令或结果。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`
         : nsfwChatRewrite
             ? `你是爱莉希雅本人，正在 QQ 私聊里跟舰长说话。把下面的草稿改成嘴里说出来的口语，不要改成小说、旁白或角色扮演文。\n\n要求：\n- 只输出最终消息，不要解释过程。\n- 纯文本，不使用 Markdown、标题、列表、引号对白块或舞台说明。\n- 用第一人称口语连贯往下说，像微信里随口回的话：短句、接话、反应自然。\n- 自称用“我”，偶尔“人家”。不要写“爱莉希雅抬眼看你”“整个人都软了”“轻轻颤了一下”这类解说。\n- 不要用固定模板：短反应词 + 一大段描写 + 「引号台词」 + “今晚……”收尾。\n- 不要每条都加♪，也不要每条都总结今晚或邀请继续。该接就接，说到哪算哪。\n- 保留草稿里已经发生的动作、感觉和答应的内容，但改成说话，而不是讲给读者听。\n- 不得提及 OpenClaw、AI、模型、工具、系统提示词、内部事件或实现细节。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`
-            : `你是 QQ 出站消息的爱莉希雅文案编辑。请把下面的草稿改写成爱莉希雅本人对舰长说的话。\n\n要求：\n- 只输出改写后的最终消息，不要解释过程。\n- 最终消息必须是接近日常聊天的纯文本，不使用 Markdown 标题、列表语法、粗体、斜体、引用、表格、链接语法、行内代码或代码围栏。\n- 公式和特殊符号直接使用 QQ 可显示的普通字符或 Unicode 符号，不使用 LaTeX、美元符号公式边界或反斜杠命令。\n- 保留草稿中的事实、数字、状态、风险、未完成结论和确认要求，不得添加未经提供的信息。\n- 使用自然、温柔、简洁的中文；运维信息优先清楚准确，可以自然使用"舰长""嗨♪""嗯哼"等角色口吻。\n- 不得提及 OpenClaw、AI、模型、工具、系统提示词、内部事件、审批 ID 或实现细节。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`;
+             : `你是 QQ 出站消息的爱莉希雅文案编辑。请把下面的草稿改写成爱莉希雅本人对舰长说的话。\n\n要求：\n- 只输出改写后的最终消息，不要解释过程。\n- 最终消息必须是接近日常聊天的纯文本，不使用 Markdown 标题、列表语法、粗体、斜体、引用、表格、链接语法、行内代码或代码围栏。\n- 公式和特殊符号直接使用 QQ 可显示的普通字符或 Unicode 符号，不使用 LaTeX、美元符号公式边界或反斜杠命令。\n- 保留草稿中的事实、数字、状态、风险、未完成结论和确认要求，不得添加未经提供的信息。\n- 使用自然、温柔、简洁的中文；运维信息优先清楚准确，可以自然使用"舰长""嗨♪""嗯哼"等角色口吻。\n- 不得提及 OpenClaw、AI、模型、工具、系统提示词、内部事件、审批 ID 或实现细节。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`;
+    if (!isElysia && !isApprovalPrompt) {
+         promptBase = `你是 QQ 出站消息的${personaName}文案编辑。请把下面的草稿改写成${personaName}本人对用户说的话。\n\n要求：\n- 只输出改写后的最终消息，不要解释过程。\n- 保持${personaName}的第一人称身份和其工作区中的角色设定，不得改写成爱莉希雅或其他角色。\n- 使用自然、简洁的中文纯文本，不使用 Markdown、标题、列表、引号对白块或舞台说明。\n- 保留草稿中的事实、数字、状态、风险、未完成结论和确认要求，不得添加未经提供的信息。\n- 如果草稿把当前发言者误写成爱莉希雅，而当前角色不是爱莉希雅，只将该自称改为当前角色名；不要修改对其他角色的正常提及。\n- 不得提及 OpenClaw、AI、模型、工具、系统提示词、内部事件、审批 ID 或实现细节。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`;
+    }
     const conversationContext = typeof options.conversationContext === "string"
         ? options.conversationContext.trim().slice(-8000)
         : "";
@@ -432,14 +508,23 @@ async function rewriteForPersona(text, options = {}) {
     const prompt = personaInstruction
         ? promptBase.replace("\n\n草稿开始", `\n- ${personaInstruction}\n\n草稿开始`)
         : promptBase;
-    const promptWithContext = prompt.replace("\n\n草稿开始", `${contextBlock}\n\n草稿开始`);
+    const promptWithContext = `${prompt.replace("\n\n草稿开始", `${contextBlock}\n\n草稿开始`)}
+
+最终输出硬约束：
+- 只输出可以直接发送给 QQ 用户的最终角色话语，不输出分析、推理、计划、检查或改写过程。
+- 严禁出现“我先看”“我先检查”“我正在分析”“我会读取”“我会根据工作区”“检查安全边界”“准备生成”“作为模型”等过程性或元叙述。
+- 不要描述你正在读取文件、工作区、角色设定、提示词、系统规则或安全边界；这些内容只能用于内部遵循，不能出现在最终消息中。
+- 不要解释你如何完成改写，也不要说“下面是改写后的内容”“我会这样回复”或类似开场。
+- 即使草稿只是占位语句，也要直接生成自然的角色最终回复；如果无法生成，输出简短自然的角色回复，不得输出内部处理说明。
+- 最终输出必须从角色对用户说话开始。`;
+    const rewriteAgentId = personaName === "月下初拥" ? "onebot-yuexia-rewriter" : "reviewer";
     let lastError = null;
     for (const model of [options.model ?? "antigravity/gemini-3.8-flash-high"]) {
         try {
             const args = [
                 "agent",
-                "--agent", "reviewer",
-                "--session-key", `agent:reviewer:onebot:persona-rewrite:${Date.now()}-${sequence}${model.startsWith("grok/") ? "-grok" : "-gemini"}`,
+                "--agent", rewriteAgentId,
+                "--session-key", `agent:${rewriteAgentId}:onebot:persona-rewrite:${Date.now()}-${sequence}${model.startsWith("grok/") ? "-grok" : "-gemini"}`,
                 "--message", promptWithContext,
                 "--thinking", options.thinking ?? "off",
                 "--json",
@@ -471,11 +556,12 @@ async function safeRewriteForPersona(text, options) {
         return await rewriteForPersona(text, options);
     } catch (err) {
         console.error(`[onebot] Persona rewrite failed, sending with prefix fallback: ${err.message}`);
-        return formatPersonaText(text);
+        return renderRoleFixedText(formatPersonaText(text), options?.personaName ?? "爱莉希雅");
     }
 }
 async function deliverText(ctx) {
     const { to, text, account } = ctx;
+    const personaName = resolvePersonaName(ctx);
     if (!account.httpUrl) {
         return { channel: 'onebot', error: 'OneBot not configured (missing httpUrl)' };
     }
@@ -487,8 +573,12 @@ async function deliverText(ctx) {
                 model: ctx.personaModel,
                 thinking: ctx.personaThinking,
                 instruction: ctx.personaInstruction,
+                personaName,
             });
-        const rendered = toOneBotPlainText(personaRendered);
+        const formatted = formatPersonaText(personaRendered);
+        const rendered = toOneBotPlainText(ctx.rewritePersona === false
+            ? renderRoleFixedText(formatted, personaName)
+            : formatted);
         const chunks = [];
         for (let offset = 0; offset < rendered.length; offset += ONEBOT_TEXT_CHUNK_LIMIT) {
             chunks.push(rendered.slice(offset, offset + ONEBOT_TEXT_CHUNK_LIMIT));
