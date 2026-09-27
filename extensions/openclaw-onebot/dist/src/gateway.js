@@ -732,7 +732,7 @@ async function reviewWithGptFallback(prompt) {
         return {
             ...(await reviewWithOpenClawAgent({
                 agent: "relaxycode",
-                model: "openai-proxy/gpt-6-sol",
+                model: "novacode/gpt-6-sol",
                 thinking: "high",
                 prompt,
                 sessionLabel: "terra-fallback",
