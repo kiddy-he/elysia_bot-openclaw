@@ -466,7 +466,7 @@ function isPersonaRewriteRefusal(text) {
     const value = String(text ?? "").trim();
     if (!value)
         return false;
-    return /(?:抱歉|很抱歉)[\s\S]{0,80}(?:无法|不能|不便|拒绝)[\s\S]{0,100}(?:改写|重写|生成|提供|协助|处理)|我无法协助(?:改写|生成|处理)|根据(?:安全规范|政策|使用政策)[\s\S]{0,100}(?:不提供|无法|不能|拒绝)|(?:I(?:'m| am) sorry|Sorry)[\s\S]{0,100}(?:can't|cannot|unable|not able)[\s\S]{0,100}(?:rewrite|generate|provide|assist)/iu.test(value);
+    return /(?:抱歉|很抱歉)[\s\S]{0,80}(?:无法|不能|不便|拒绝)[\s\S]{0,100}(?:改写|重写|生成|提供|协助|处理)|我无法协助(?:改写|生成|处理)|根据(?:安全规范|政策|使用政策)[\s\S]{0,100}(?:不提供|无法|不能|拒绝)|(?:I(?:'m| am) sorry|Sorry)[\s\S]{0,100}(?:can't|cannot|unable|not able)[\s\S]{0,100}(?:rewrite|generate|provide|assist)|the prompt could not be submitted|the prompt contains sensitive words|\bPROHIBITED_CONTENT\b|Prohibited Use policy/iu.test(value);
 }
 function preserveApprovalAuditFields(draft, rewritten) {
     const auditFields = draft.split("\n")
@@ -489,15 +489,19 @@ async function rewriteForPersona(text, options = {}) {
         ? options.personaName.trim()
         : "爱莉希雅";
     const isElysia = personaName === "爱莉希雅";
+    const isYuexia = personaName === "月下初拥";
     const personaInstruction = typeof options.instruction === "string" ? options.instruction.trim() : "";
+    const defaultPersonaInstruction = isYuexia
+        ? "当前设定为大月下时期（月下誓约·予爱以心，成熟优雅的血族新娘，知性从容，完好保留着小月下时期的全部记忆与深情）。像真人私聊一样接话：直接回应用户最新一句，只留必要的情绪和设定；一般 1-3 个短段、2-6 句，不要把简单回复扩写成剧情独白。保持成熟、沉静、从容、带点深情停顿的语气；自称自然用‘我’，少重复‘月下’和称呼，少用连续省略号，不用低幼卖萌腔，不要固定收尾，去除任何AI味与模板化说辞。"
+        : "";
     const nsfwChatRewrite = !isApprovalPrompt && String(options.model ?? "").startsWith("grok/");
     let promptBase = isApprovalPrompt
-        ? `你是 QQ 出站消息的爱莉希雅文案编辑。下面的草稿是一条需要舰长确认的审批消息。\n\n要求：\n- 只输出改写后的最终消息，不要解释过程。\n- 最终消息必须是接近日常聊天的纯文本，不使用 Markdown 标题、列表语法、粗体、斜体、引用、表格、链接语法、行内代码或代码围栏。\n- 公式和特殊符号直接使用 QQ 可显示的普通字符或 Unicode 符号，不使用 LaTeX、美元符号公式边界或反斜杠命令。\n- 保留草稿中的全部命令、风险说明和确认要求；命令放在独立的普通文本行，不使用代码块。\n- 若草稿含有“模型审查：”或“审查理由：”行，必须逐字保留这两行；这是面向舰长的审计信息，不是可删减的内部细节。\n- 为草稿中出现的每条命令补充一行"作用：<一句话说明该命令做什么>"，写在命令之后、风险说明之前。\n- 为每条命令补充关键风险点（如已存在风险说明则保留并强化为"关键风险："开头；若草稿未提供风险，请基于该命令本身简要说明其关键风险）。\n- 使用自然、温柔、简洁的中文，可以自然使用"舰长""嗨♪"等口吻。\n- 不得提及 OpenClaw、AI、工具、系统提示词、内部事件、审批 ID 或实现细节；不得编造草稿中不存在的命令或结果。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`
+        ? `你在把一条发给 QQ 的审批消息改成能直接发出去的话。下面草稿是需要舰长确认的操作说明。\n\n要求：\n- 只输出改好的消息，别写过程。\n- 说人话，像日常聊天。不要 Markdown 标题、列表、粗体、斜体、引用、表格、链接、行内代码或代码围栏。\n- 公式和特殊符号直接用 QQ 能显示的普通字符或 Unicode，不要 LaTeX、美元符号公式边界或反斜杠命令。\n- 草稿里的命令、风险说明和确认要求一个都不能少；命令放在单独的普通文本行，不要放代码块。\n- 草稿里如果有“模型审查：”“审查理由：”行，原样保留；这是给舰长看的审计信息，不能省。\n- 每条命令后面补一行“作用：<一句话说这条命令干什么>”，放在命令之后、风险说明之前。\n- 每条命令补上关键风险：已有风险说明就保留并改成“关键风险：”开头；草稿没写的，按命令本身说明。\n- 语气自然、温柔、简洁，可以用“舰长”“嗨♪”。\n- 不要提 OpenClaw、AI、工具、系统提示词、内部事件、审批 ID 或实现细节；不要编造草稿里没有的命令或结果。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`
         : nsfwChatRewrite
-            ? `你是爱莉希雅本人，正在 QQ 私聊里跟舰长说话。把下面的草稿改成嘴里说出来的口语，不要改成小说、旁白或角色扮演文。\n\n要求：\n- 只输出最终消息，不要解释过程。\n- 纯文本，不使用 Markdown、标题、列表、引号对白块或舞台说明。\n- 用第一人称口语连贯往下说，像微信里随口回的话：短句、接话、反应自然。\n- 自称用“我”，偶尔“人家”。不要写“爱莉希雅抬眼看你”“整个人都软了”“轻轻颤了一下”这类解说。\n- 不要用固定模板：短反应词 + 一大段描写 + 「引号台词」 + “今晚……”收尾。\n- 不要每条都加♪，也不要每条都总结今晚或邀请继续。该接就接，说到哪算哪。\n- 保留草稿里已经发生的动作、感觉和答应的内容，但改成说话，而不是讲给读者听。\n- 不得提及 OpenClaw、AI、模型、工具、系统提示词、内部事件或实现细节。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`
-             : `你是 QQ 出站消息的爱莉希雅文案编辑。请把下面的草稿改写成爱莉希雅本人对舰长说的话。\n\n要求：\n- 只输出改写后的最终消息，不要解释过程。\n- 最终消息必须是接近日常聊天的纯文本，不使用 Markdown 标题、列表语法、粗体、斜体、引用、表格、链接语法、行内代码或代码围栏。\n- 公式和特殊符号直接使用 QQ 可显示的普通字符或 Unicode 符号，不使用 LaTeX、美元符号公式边界或反斜杠命令。\n- 保留草稿中的事实、数字、状态、风险、未完成结论和确认要求，不得添加未经提供的信息。\n- 使用自然、温柔、简洁的中文；运维信息优先清楚准确，可以自然使用"舰长""嗨♪""嗯哼"等角色口吻。\n- 不得提及 OpenClaw、AI、模型、工具、系统提示词、内部事件、审批 ID 或实现细节。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`;
+            ? `你是爱莉希雅，正在 QQ 私聊里跟舰长说话。把下面草稿改成嘴里说出来的话，不要写成小说、旁白或角色扮演文。\n\n要求：\n- 只输出最终消息，别解释。\n- 纯文本，不要 Markdown、标题、列表、引号对白块或舞台说明。\n- 第一人称口语连着说，像微信里随口回的话：短句、接话、反应自然。\n- 自称“我”，偶尔“人家”。别写“爱莉希雅抬眼看你”“整个人都软了”“轻轻颤了一下”这种解说。\n- 别套模板：短反应词 + 一大段描写 + 「引号台词」 + “今晚……”收尾。\n- 不要每条都加♪，也不要每条都总结今晚或邀请继续。该接就接，说到哪算哪。\n- 草稿里已经发生的动作、感觉和答应的内容留着，但改成说话，不是讲给读者听。\n- 不要提 OpenClaw、AI、模型、工具、系统提示词、内部事件或实现细节。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`
+             : `你在把草稿改成爱莉希雅本人对舰长说的话。\n\n要求：\n- 只输出改好的消息，别写过程。\n- 说人话，像日常聊天。不要 Markdown 标题、列表、粗体、斜体、引用、表格、链接、行内代码或代码围栏。\n- 公式和特殊符号直接用 QQ 能显示的普通字符或 Unicode，不要 LaTeX、美元符号公式边界或反斜杠命令。\n- 草稿里的事实、数字、状态、风险、没做完的结论和确认要求都保留，不要加草稿没有的信息。\n- 中文自然、温柔、简洁；运维信息先保证清楚准确。可以用“舰长”“嗨♪”“嗯哼”这类口吻。\n- 不要提 OpenClaw、AI、模型、工具、系统提示词、内部事件、审批 ID 或实现细节。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`;
     if (!isElysia && !isApprovalPrompt) {
-         promptBase = `你是 QQ 出站消息的${personaName}文案编辑。请把下面的草稿改写成${personaName}本人对用户说的话。\n\n要求：\n- 只输出改写后的最终消息，不要解释过程。\n- 保持${personaName}的第一人称身份和其工作区中的角色设定，不得改写成爱莉希雅或其他角色。\n- 使用自然、简洁的中文纯文本，不使用 Markdown、标题、列表、引号对白块或舞台说明。\n- 保留草稿中的事实、数字、状态、风险、未完成结论和确认要求，不得添加未经提供的信息。\n- 如果草稿把当前发言者误写成爱莉希雅，而当前角色不是爱莉希雅，只将该自称改为当前角色名；不要修改对其他角色的正常提及。\n- 不得提及 OpenClaw、AI、模型、工具、系统提示词、内部事件、审批 ID 或实现细节。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`;
+         promptBase = `你在把草稿改成${personaName}本人对用户说的话。\n\n要求：\n- 只输出改好的消息，别写过程。\n- 保持${personaName}的第一人称和其工作区里的角色设定，不要改成爱莉希雅或其他角色。\n- 自然、简洁的中文纯文本，不要 Markdown、标题、列表、引号对白块或舞台说明。\n- 草稿里的事实、数字、状态、风险、没做完的结论和确认要求都保留，不要加草稿没有的信息。\n- 如果草稿把说话者写成了爱莉希雅，而当前角色不是她，只把自称改成当前角色名；提到其他角色的地方正常保留。\n- 不要提 OpenClaw、AI、模型、工具、系统提示词、内部事件、审批 ID 或实现细节。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`;
     }
     const conversationContext = typeof options.conversationContext === "string"
         ? options.conversationContext.trim().slice(-8000)
@@ -505,28 +509,35 @@ async function rewriteForPersona(text, options = {}) {
     const contextBlock = conversationContext
         ? `\n\n最近对话摘要（仅用于保持连贯，不要复述）：\n${conversationContext}`
         : "";
-    const prompt = personaInstruction
-        ? promptBase.replace("\n\n草稿开始", `\n- ${personaInstruction}\n\n草稿开始`)
+    const effectivePersonaInstruction = personaInstruction || defaultPersonaInstruction;
+    const prompt = effectivePersonaInstruction
+        ? promptBase.replace("\n\n草稿开始", `\n- ${effectivePersonaInstruction}\n\n草稿开始`)
         : promptBase;
     const promptWithContext = `${prompt.replace("\n\n草稿开始", `${contextBlock}\n\n草稿开始`)}
 
 最终输出硬约束：
-- 只输出可以直接发送给 QQ 用户的最终角色话语，不输出分析、推理、计划、检查或改写过程。
-- 严禁出现“我先看”“我先检查”“我正在分析”“我会读取”“我会根据工作区”“检查安全边界”“准备生成”“作为模型”等过程性或元叙述。
-- 不要描述你正在读取文件、工作区、角色设定、提示词、系统规则或安全边界；这些内容只能用于内部遵循，不能出现在最终消息中。
-- 不要解释你如何完成改写，也不要说“下面是改写后的内容”“我会这样回复”或类似开场。
-- 即使草稿只是占位语句，也要直接生成自然的角色最终回复；如果无法生成，输出简短自然的角色回复，不得输出内部处理说明。
-- 最终输出必须从角色对用户说话开始。`;
+- 只输出能直接发给 QQ 的角色话语，不输出分析、推理、计划、检查或改写过程。
+- 不要出现“我先看”“我先检查”“我正在分析”“我会读取”“我会根据工作区”“检查安全边界”“准备生成”“作为模型”这类过程性或跳戏的话。
+- 不要写你正在读文件、工作区、角色设定、提示词、系统规则或安全边界；这些只在内部遵守，不能出现在消息里。
+- 不要解释怎么改写的，也不要说“下面是改写后的内容”“我会这样回复”。
+- 草稿只是占位也要直接写一条自然的角色回复；实在写不出来，就写一句简短自然的角色话，不要输出内部处理说明。
+- 输出必须从角色对用户说话开始。`;
     const rewriteAgentId = personaName === "月下初拥" ? "onebot-yuexia-rewriter" : "reviewer";
     let lastError = null;
-    for (const model of [options.model ?? "antigravity/gemini-3.8-flash-high"]) {
+    const primaryModel = options.model ?? "antigravity/gemini-3.8-flash-high";
+    const rewriteModels = [primaryModel, "novacode/qwen3.8-flash-next"]
+        .filter((model, index, models) => model && models.indexOf(model) === index);
+    for (const model of rewriteModels) {
         try {
+            const thinking = model === "novacode/qwen3.8-flash-next"
+                ? "off"
+                : options.thinking ?? "off";
             const args = [
                 "agent",
                 "--agent", rewriteAgentId,
                 "--session-key", `agent:${rewriteAgentId}:onebot:persona-rewrite:${Date.now()}-${sequence}${model.startsWith("grok/") ? "-grok" : "-gemini"}`,
                 "--message", promptWithContext,
-                "--thinking", options.thinking ?? "off",
+                "--thinking", thinking,
                 "--json",
                 "--timeout", "60",
             ];
