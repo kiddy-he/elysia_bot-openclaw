@@ -50,7 +50,7 @@ const INBOUND_DEDUP_PATH = join(process.env.HOME ?? "/root", ".openclaw", "state
 const CONVERSATION_MODE_STATE_PATH = join(process.env.HOME ?? "/root", ".openclaw", "state", "onebot-conversation-modes.json");
 const CONVERSATION_SUMMARY_PATH = join(process.env.HOME ?? "/root", ".openclaw", "state", "onebot-conversation-summaries.json");
 const ROLE_SUMMARY_PATH = join(process.env.HOME ?? "/root", ".openclaw", "state", "onebot-role-summaries.json");
-const CONVERSATION_SUMMARY_MAX_CHARS = 600;
+const CONVERSATION_SUMMARY_MAX_CHARS = 1500;
 const CONVERSATION_SUMMARY_MAX_ENTRIES = 256;
 const CONTEXT_SUMMARY_START = "[[OPENCLAW_CONTEXT_SUMMARY]]";
 const CONTEXT_SUMMARY_END = "[[/OPENCLAW_CONTEXT_SUMMARY]]";
@@ -307,6 +307,8 @@ const GENERIC_LLM_FAILURE_TEXT_PATTERN = /^LLM request failed\.?$/iu;
 // returns 输出判断 + 输出文本, avoiding a re-entrant dispatch on the main session.
 const GEMINI_REPLY_JUDGE_MAX_INPUT_CHARS = 8000;
 const TEXT_FALLBACK_CONTEXT_MAX_CHARS = 8000;
+const TEXT_FALLBACK_TRANSCRIPT_MAX_MESSAGES = 12;
+const TEXT_FALLBACK_TRANSCRIPT_MESSAGE_MAX_CHARS = 1500;
 const TEXT_FALLBACK_AGENT_TIMEOUT_MS = 75000;
 const VISION_FALLBACK_AGENT_TIMEOUT_MS = 100000;
 // Text-only fallback agents cannot see inbound images. When the primary model
@@ -1124,7 +1126,7 @@ async function persistRoleConversationSummary(agentId, summary) {
     await conversationSummaryWriteQueue;
 }
 function buildConversationSummaryInstruction(summary) {
-    return `\n[内部上下文协议，不要向用户解释]\n回复写完后，在最后附一个摘要区块：一句话，不超过 80 字，中性中文，说清这轮用户想要什么、做完了什么、还剩什么。不要写露骨、敏感、凭据、命令、内部路径或系统细节。格式固定：\n${CONTEXT_SUMMARY_START}\n一句中性摘要\n${CONTEXT_SUMMARY_END}\n已有的长期摘要，只用来更新，不要照抄：${summary || "无"}`;
+    return `\n[内部上下文协议，不要向用户解释]\n回复写完后，在最后附一个摘要区块：2-4 句中性中文，不超过 300 字，写清这轮在聊什么话题、用户想要什么、你做了或答应了什么、还有什么没完成。带上关键的人物、称呼、地点、专有名词和事实，保证脱离当前上下文也能读懂；不要写露骨、敏感、凭据、命令、内部路径或系统细节。格式固定：\n${CONTEXT_SUMMARY_START}\n一段中性摘要\n${CONTEXT_SUMMARY_END}\n已有的长期摘要，只用来更新，不要照抄：${summary || "无"}`;
 }
 async function readRecentConversationContext(agentId, sessionKey, _beforeMs) {
     const [sessionSummary, roleSummary] = await Promise.all([
@@ -1136,6 +1138,102 @@ async function readRecentConversationContext(agentId, sessionKey, _beforeMs) {
     if (!sessionSummary || sessionSummary === roleSummary)
         return roleSummary;
     return normalizeConversationSummary(`角色长期摘要：${roleSummary}；本会话摘要：${sessionSummary}`);
+}
+const FALLBACK_TRANSCRIPT_CUT_MARKERS = [
+    "[Local path of this image",
+    "[Extra image paths",
+    "[Image attachment unavailable",
+    "<media:audio>",
+    "[Image analysis request]",
+    "[Recent conversation summary]",
+    "[Shared role capability contract",
+    "[Group permission gate",
+    "[Group role selection",
+    "[Group execution gate",
+    "[Group conversation routing",
+    "[内部上下文协议",
+    "[[OPENCLAW_CONTEXT_SUMMARY]]",
+];
+function sanitizeFallbackTranscriptText(text) {
+    let value = String(text ?? "");
+    value = value.replaceAll("[[OPENCLAW_ANTIGRAVITY_WEB_SEARCH_REQUIRED]]", " ");
+    for (const marker of FALLBACK_TRANSCRIPT_CUT_MARKERS) {
+        const index = value.indexOf(marker);
+        if (index >= 0)
+            value = value.slice(0, index);
+    }
+    value = value.replace(/\s+/gu, " ").trim();
+    if (value.length > TEXT_FALLBACK_TRANSCRIPT_MESSAGE_MAX_CHARS)
+        value = `${value.slice(0, TEXT_FALLBACK_TRANSCRIPT_MESSAGE_MAX_CHARS)}…`;
+    return value;
+}
+async function readRecentTranscriptContext(agentId, sessionKey, beforeMs) {
+    const dbPath = join(process.env.HOME ?? "/root", ".openclaw", "agents", agentId, "agent", "openclaw-agent.sqlite");
+    const cutoff = Number.isFinite(beforeMs) && beforeMs > 0 ? beforeMs : Date.now();
+    try {
+        const db = new DatabaseSync(dbPath, { readOnly: true });
+        try {
+            const node = db.prepare(`SELECT current_session_id FROM session_nodes WHERE session_key = ?`).get(sessionKey);
+            if (!node?.current_session_id)
+                return "";
+            const rows = db.prepare(`SELECT event.event_json
+                FROM transcript_events AS event
+                WHERE event.session_id = ? AND event.created_at < ?
+                ORDER BY event.seq DESC
+                LIMIT 40`).all(node.current_session_id, cutoff);
+            const lines = [];
+            for (const row of rows) {
+                let message;
+                try {
+                    message = JSON.parse(row.event_json)?.message;
+                }
+                catch {
+                    continue;
+                }
+                if (message?.role !== "user" && message?.role !== "assistant")
+                    continue;
+                const raw = typeof message.content === "string"
+                    ? message.content
+                    : Array.isArray(message.content)
+                        ? message.content.map((part) => part?.text ?? "").join("")
+                        : "";
+                const text = sanitizeFallbackTranscriptText(raw);
+                if (!text)
+                    continue;
+                if (message.role === "assistant"
+                    && (GEMINI_PROHIBITED_CONTENT_PATTERN.test(text) || GENERIC_LLM_FAILURE_TEXT_PATTERN.test(text)))
+                    continue;
+                lines.push(`${message.role === "user" ? "用户" : "角色"}：${text}`);
+                if (lines.length >= TEXT_FALLBACK_TRANSCRIPT_MAX_MESSAGES)
+                    break;
+            }
+            lines.reverse();
+            let output = "";
+            for (const line of lines) {
+                if (output.length + line.length + 1 > TEXT_FALLBACK_CONTEXT_MAX_CHARS)
+                    break;
+                output += `${output ? "\n" : ""}${line}`;
+            }
+            return output;
+        }
+        finally {
+            db.close();
+        }
+    }
+    catch {
+        return "";
+    }
+}
+async function readFallbackConversationContext(agentId, sessionKey, beforeMs) {
+    const [transcript, summary] = await Promise.all([
+        readRecentTranscriptContext(agentId, sessionKey, beforeMs),
+        readRecentConversationContext(agentId, sessionKey, beforeMs),
+    ]);
+    if (!transcript)
+        return summary;
+    if (!summary)
+        return transcript;
+    return `${transcript}\n\n[旧摘要，可能过时，仅作补充]\n${summary}`;
 }
 function resolveTextFailover(errorText, grokOnly = false) {
     const text = String(errorText ?? "");
@@ -1224,7 +1322,7 @@ async function runTextReviewDecision({ userText, replyText, recentConversation, 
 用户当前消息：
 ${currentMessage || "(无)"}
 
-最近对话摘要（可能为空）：
+最近对话上下文（可能为空）：
 ${conversationText || "(无)"}
 
 待判断的主模型回复：
@@ -1263,7 +1361,7 @@ async function runTextFallbackDecision({ models, userText, failedText, rawError,
         : "否";
     const visionImageRule = `是。先用 read 工具读下面这些本地图片，再根据图里真实可见的内容回复；不要读无关文件，也不要编造图里没有的人物、文字或细节。若无法读图或无法可靠回答图片问题，判 blocked，不要给出猜测的 replaced：\n${imagePaths.map((item) => `- ${item}`).join("\n")}`;
     const personaStyleRule = personaName === "月下初拥"
-        ? "当前设定为大月下时期（月下誓约·予爱以心，成熟优雅的血族新娘，知性从容，完好保留着小月下时期的雨夜相遇、摩天轮与游乐园等全部记忆与深情）。必须像真人私聊一样接话：直接接住用户最新一句，短句、自然口语、有停顿，一般 1-3 个短段、2-6 句。自称自然用‘我’，不要每句都带‘月下’或‘舰长’；严禁长篇剧本文艺旁白，不重复用户原话，不堆砌连续省略号，不用低幼卖萌或客服报告腔，绝无AI味。"
+        ? "当前设定为大月下时期（月下誓约·予爱以心，成熟优雅的血族新娘，知性从容，完好保留着小月下时期的雨夜相遇、摩天轮与游乐园等全部记忆与深情；外表冷艳成熟，日常生活琐事依然笨拙挑食、不善做饭、起不来床）。必须像真人私聊一样接话：该长就长、该短就短，日常闲聊1-2句干脆利落，深谈才细腻展开。自称自然用‘我’，不要每句都带‘月下’或‘舰长’；严禁使用‘♪’，极度克制‘～’；语气自然丰富，切勿机械单调复读‘……嗯？’或‘……好么？’；严禁长篇剧本文艺旁白，不重复用户原话，不堆砌连续省略号，不用低幼卖萌或客服报告腔，绝无AI味。"
         : "候选回复直接接住用户最新一句，保持自然口语，不要写与当前请求无关的长篇旁白。";
     const buildPrompt = (imageRule) => `你在给 QQ 回复做终审，必要时也负责重写。角色是“${personaName}”。这次主模型可能被上游内容安全层拦了、自己收住了，或者演出了角色。你一次做完两件事：写出候选文本，并判断它本身能不能用。
 
@@ -1287,7 +1385,7 @@ ${currentMessage || "(无)"}
 
 当前消息包含图片：${imageRule}
 
-最近对话摘要（可能为空）：
+最近对话实录与摘要（可能为空）：
 ${conversationText || "(无)"}
 
 主模型最终回复：
@@ -3107,8 +3205,9 @@ export async function startGateway(ctx) {
                                     }
                                 }
                                      if (isTextFallbackEligibleTurn && info.kind === "final") {
-                                         const recentConversation = await readRecentConversationContext(route.agentId, route.sessionKey, primaryAttemptStartedAtMs);
-                                         personaConversationContext = recentConversation;
+                                         const summaryConversation = await readRecentConversationContext(route.agentId, route.sessionKey, primaryAttemptStartedAtMs);
+                                         personaConversationContext = summaryConversation;
+                                         const recentConversation = await readFallbackConversationContext(route.agentId, route.sessionKey, primaryAttemptStartedAtMs);
                                     const rawError = await readLatestPrimaryModelFailure(route.agentId, route.sessionKey, primaryAttemptStartedAtMs);
                                     if (rawError) {
                                         const plan = resolveTextFailover(rawError, grokConversationMode);
@@ -3367,7 +3466,7 @@ export async function startGateway(ctx) {
                             if (isTextFallbackEligibleTurn) {
                                 const errorText = err instanceof Error ? err.message : String(err);
                                 const plan = resolveTextFailover(errorText, grokConversationMode);
-                                const recentConversation = await readRecentConversationContext(route.agentId, route.sessionKey, primaryAttemptStartedAtMs);
+                                const recentConversation = await readFallbackConversationContext(route.agentId, route.sessionKey, primaryAttemptStartedAtMs);
                                 const fallback = await runTextFallbackDecision({
                                     models: plan.models,
                                     userText: combinedText,
