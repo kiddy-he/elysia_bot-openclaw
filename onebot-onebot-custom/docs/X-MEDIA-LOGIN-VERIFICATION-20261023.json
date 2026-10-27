@@ -1,0 +1,51 @@
+{
+  "date": "2026-10-23",
+  "timezone": "Asia/Shanghai",
+  "login": {
+    "accounts": 1,
+    "active": 1,
+    "ready": true,
+    "accounts_db_mode": "0600",
+    "temporary_import_files_removed": true
+  },
+  "search": {
+    "real_upstream": true,
+    "query": "Elysia cosplay",
+    "elapsed_ms": 3850,
+    "candidate_count": 20
+  },
+  "workflow": {
+    "real_upstream": true,
+    "real_media_download_and_validation": true,
+    "production_permissions": true,
+    "persistent_delivery_queue": true,
+    "ok": true,
+    "elapsed_ms": 10130,
+    "timings": [
+      {
+        "stage": "search",
+        "elapsed_ms": 3563
+      },
+      {
+        "stage": "inspect",
+        "elapsed_ms": 4235
+      },
+      {
+        "stage": "download",
+        "elapsed_ms": 2324
+      },
+      {
+        "stage": "send",
+        "elapsed_ms": 7
+      }
+    ],
+    "post_count": 2,
+    "media_count": 2,
+    "forward_node_count": 2,
+    "captured_platform_sends": 1,
+    "real_platform_send": false,
+    "includes_inbound_llm_and_final_reply": false
+  },
+  "evidence_directory": "/root/.openclaw/state/x-media/login-verification-20261023",
+  "requires_gateway_restart": false
+}

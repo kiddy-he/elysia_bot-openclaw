@@ -1,7 +1,8 @@
+import { onebotPath } from "./paths.js";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-export const MODEL_ROUTING_PATH = join(process.env.HOME ?? "/root", ".openclaw", "onebot-model-routing.json");
+export const MODEL_ROUTING_PATH = onebotPath("onebot-model-routing.json");
 const VALID_THINKING_LEVELS = new Set(["off", "minimal", "low", "medium", "high", "xhigh", "max"]);
 
 export function loadModelRouting(path = MODEL_ROUTING_PATH) {
@@ -26,6 +27,7 @@ export function loadModelRouting(path = MODEL_ROUTING_PATH) {
     };
     return {
         presetName,
+        flashLiteFallbacks: normalizeRoutes(config.flashLiteFallbacks ?? [{model:"gemini-official/gemini-3.5-flash-lite",thinking:"off"}, ...preset.errorFallbacks], "flashLiteFallbacks"),
         conversation: normalizeRoute(preset.conversation, "conversation"),
         textReview: normalizeRoute(preset.textReview, "textReview"),
         contentFallbacks: normalizeRoutes(preset.contentFallbacks, "contentFallbacks"),

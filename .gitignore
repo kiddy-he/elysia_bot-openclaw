@@ -27,3 +27,24 @@ workspace/skills/agy-proxy/prompts/*
 !workspace/skills/agy-proxy/prompts/reference-edit-optimizer-system.txt
 *.bak
 *.tmp
+
+# Local dependencies, login state and generated outputs are never source archives.
+onebot-onebot-custom/node_modules/
+onebot-onebot-custom/integrations/**/.venv/
+**/__pycache__/
+**/*.pyc
+workspaces/
+skill-workshop/
+config-journal-fingerprint.key
+*.bak-*
+*.last-good
+**/.env
+!**/.env.example
+onebot-onebot-custom/integrations/bilibili-notify/config/
+onebot-onebot-custom/integrations/bilibili-notify/runtime/
+onebot-onebot-custom/integrations/bilibili-notify/data/
+onebot-onebot-custom/integrations/x-media/accounts.db*
+
+# Live root configurations stay local; commit only generated generic examples.
+/openclaw.json
+/onebot-*.json

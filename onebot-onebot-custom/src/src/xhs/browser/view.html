@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>小红书人工登录</title>
+<style>
+body{margin:0;background:#f5f5f5;color:#222;font:16px system-ui,sans-serif}main{max-width:1280px;margin:auto;padding:16px}h1{font-size:22px}#status{font-weight:600}#detail{min-height:1.5em;color:#555}canvas{display:block;width:100%;height:auto;background:#ddd;outline:2px solid transparent;touch-action:none;cursor:default}canvas:focus{outline-color:#237bcd}button,input{font:inherit;padding:8px;margin:8px 8px 8px 0}input{width:min(60%,500px)}#error{color:#b00020;min-height:1.5em}
+</style><script src="view.js" defer></script></head>
+<body><main><h1>小红书人工登录</h1><p id="status" role="status">正在连接…</p><p id="detail">请使用小红书 App 扫码；若页面出现验证，请直接在下方操作。点击画面后可使用键盘，触屏支持拖动。</p>
+<canvas id="screen" width="1280" height="800" tabindex="0" aria-label="远程小红书页面"></canvas>
+<div><input id="text" maxlength="500" autocomplete="off" placeholder="需要输入文字时，在此填写后发送"><button id="send">发送文字</button><button id="complete" hidden>验证已完成，检查并保存</button><button id="cancel">取消登录</button></div><p id="error" role="alert"></p></main></body></html>

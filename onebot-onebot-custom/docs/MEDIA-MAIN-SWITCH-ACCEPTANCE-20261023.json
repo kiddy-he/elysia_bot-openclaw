@@ -1,0 +1,42 @@
+{
+  "checked_at": "2026-10-23T10:01:23.853751+08:00",
+  "generation": "current conversation route; antigravity/gemini-3.8-flash-high/high",
+  "review": "independent textReview route; antigravity/gemini-3.5-flash-lite/off",
+  "budget_ms": {
+    "generation": 45000,
+    "review": 10000,
+    "total": 60000,
+    "after_media_receipt": "[omitted]"
+  },
+  "context": "trusted routed SOUL; permitted current conversation summary/quote/group background; original request; selected public title/body/author",
+  "new_context_tests": 6,
+  "coordinator_tests": 11,
+  "full_deploy_checks": "passed; 124 files",
+  "real_model_preparation_ms": {
+    "x": 16768,
+    "xiaohongshu": 19331
+  },
+  "live_x_captured_pipeline": {
+    "targetMs": 60000,
+    "mediaToTextMs": 8349,
+    "inboundToTextMs": 35743,
+    "fastCompletion": true,
+    "inboundToMediaMs": 27394,
+    "withinTarget": true
+  },
+  "delivered_text_mirror_count": 1,
+  "tools": [
+    {
+      "tool": "x_media_workflow",
+      "success_recorded": true
+    }
+  ],
+  "production_accounts": [
+    "default",
+    "yuexia"
+  ],
+  "production_reloaded": true,
+  "real_qq_test_messages_sent": false,
+  "real_sms_requested": false,
+  "note": "XHS API currently requires login, so XHS preparation was tested with recorded public posts; live full pipeline tested with X."
+}

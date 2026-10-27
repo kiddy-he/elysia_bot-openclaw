@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "enabled": false,
+  "user": "${EXAMPLE_SERVICE_USER}",
+  "home": "${EXAMPLE_REACH_HOME}",
+  "executable": "${EXAMPLE_REACH_COMMAND}",
+  "platforms": {}
+}

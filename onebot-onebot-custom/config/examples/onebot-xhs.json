@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "enabled": false,
+  "accountId": "example",
+  "dataDir": "${EXAMPLE_XHS_DATA_DIR}",
+  "manualVerification": {
+    "enabled": false,
+    "publicOrigin": "https://login.example.invalid",
+    "port": "${EXAMPLE_LOGIN_PORT}"
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "date": "2026-10-23",
+  "deployed": true,
+  "sourceFilesChecked": 120,
+  "fullNodeTestSuitePassed": true,
+  "xSpecializedTests": 15,
+  "service": {
+    "active": true,
+    "pid": 23043,
+    "websocketAccountsConnected": [
+      "default",
+      "yuexia"
+    ]
+  },
+  "authentication": {
+    "accounts": 0,
+    "searchReady": false,
+    "publicLinksReady": true
+  },
+  "capturedAcceptance": {
+    "groupLink": {
+      "performance": {
+        "targetMs": 60000,
+        "inboundToMediaMs": 25385,
+        "withinTarget": true
+      },
+      "finished": true,
+      "scope": "group",
+      "sender": "188888888",
+      "tools": [
+        {
+          "name": "x_media_workflow",
+          "state": "succeeded",
+          "deliveryStatus": "delivered",
+          "receipt": "[omitted]"
+        }
+      ],
+      "receipts": "[omitted]"
+    },
+    "adminSearchWithoutLogin": {
+      "finished": true,
+      "tools": [
+        {
+          "name": "x_media_workflow",
+          "state": "failed",
+          "deliveryStatus": "not_confirmed",
+          "error": {
+            "code": "auth_required"
+          }
+        }
+      ],
+      "receipts": "[omitted]"
+    },
+    "directRealDownload": {
+      "version": 1,
+      "operation": "media_workflow",
+      "ok": true,
+      "status": "ok",
+      "data": {
+        "posts": [
+          {
+            "post_id": "1577855540407197696",
+            "source_url": "https://x.com/i/status/1577855540407197696",
+            "title": "gm ✨️ now I can post image and video. nice update.",
+            "text": "gm ✨️ now I can post image and video. nice update.",
+            "author": {
+              "name": "Oshtru",
+              "username": "[omitted]"
+            },
+            "metrics": {
+              "likes": 39
+            },
+            "media_count": 2,
+            "media_types": [
+              "image",
+              "video"
+            ]
+          }
+        ],
+        "media_count": 2,
+        "rank": "relevance",
+        "timings": [
+          {
+            "stage": "inspect",
+            "elapsed_ms": 1466
+          },
+          {
+            "stage": "download",
+            "elapsed_ms": 1581
+          },
+          {
+            "stage": "send",
+            "elapsed_ms": 10
+          }
+        ],
+        "elapsed_ms": 3058,
+        "delivery_status": "delivered",
+        "delivery_id": "onebot-03fbb78947b28bb21b0b71574f6fd919bf3583f595eb3d0c32befb651e881610",
+        "receipt": "[omitted]"
+      },
+      "error": null,
+      "capturedQQ": 1
+    }
+  },
+  "liveClassifier": {
+    "bareXPostLink": true,
+    "mathVariableX": false,
+    "translationOfQuotedXSearch": false
+  },
+  "globalFeatureCheck": {
+    "passed": false,
+    "preexisting": true,
+    "reason": "Missing declared automation qzone-elysia-prepare-retry-2026-10-20-2; X feature configuration and executor validation passed"
+  }
+}

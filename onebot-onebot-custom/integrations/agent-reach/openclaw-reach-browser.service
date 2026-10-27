@@ -1,0 +1,29 @@
+[Unit]
+Description=Dedicated browser for OpenClaw Agent-Reach read-only tools
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=openclaw-reach
+Group=openclaw-reach
+WorkingDirectory=/var/lib/openclaw-agent-reach
+Environment=HOME=/var/lib/openclaw-agent-reach
+Environment=PATH=/var/lib/openclaw-agent-reach/.local/bin:/opt/openclaw-agent-reach/bootstrap/bin:/usr/local/bin:/usr/bin:/bin
+Environment=LANG=C.UTF-8
+Environment=NO_PROXY=localhost,127.0.0.1,::1
+ExecStart=/var/lib/openclaw-agent-reach/.local/share/uv/tools/agent-reach/bin/python /opt/openclaw-agent-reach/browser-worker.py
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=15
+KillMode=control-group
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/openclaw-agent-reach
+UMask=0077
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

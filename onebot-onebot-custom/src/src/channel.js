@@ -1,17 +1,12 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { basename, extname, isAbsolute, join, resolve as resolvePath } from "node:path";
-import { fileURLToPath } from "node:url";
-import { extensionForMime, readRemoteMediaBuffer } from "openclaw/plugin-sdk/media-runtime";
+import { basename } from "node:path";
 import { getDefaultContainerSharedDir, getDefaultSharedDir } from "./env.js";
 import { listOneBotAccountIds, resolveOneBotAccount, applyOneBotAccountConfig } from "./config.js";
-import { reactToMessage, sendImage, sendRecord, sendText, uploadFile } from "./outbound.js";
+import { reactToMessage, sendForwardTransport, sendImageTransport as sendImage, sendRecordTransport as sendRecord, sendTextTransport as sendText, uploadFileTransport as uploadFile } from "./outbound.js";
 import { startGateway } from "./gateway.js";
+import { validateNativeDelivery, nativeDeliveryContext, acceptedPart, recordAcceptedPart } from "./delivery/queue.js";
+import { scopedAgent } from "./workspaces/routes.js";
 const DEFAULT_ACCOUNT_ID = "default";
 const ONEBOT_MESSAGE_ACTIONS = ["react"];
-const IMAGE_EXTS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".heic", ".heif"]);
-const AUDIO_EXTS = new Set([".mp3", ".ogg", ".wav", ".m4a", ".aac", ".flac", ".amr", ".silk", ".opus"]);
-const REMOTE_MEDIA_MAX_BYTES = 25 * 1024 * 1024;
 function createActionResult(text, details) {
     return {
         content: [{ type: "text", text }],
@@ -27,50 +22,6 @@ function parseTarget(to) {
         return { type: "group", id: Number(normalized.slice(6)) };
     }
     return { type: "private", id: Number(normalized) };
-}
-function resolveLocalMediaPath(mediaUrl) {
-    if (!mediaUrl || !mediaUrl.trim()) {
-        throw new Error("OneBot sendMedia requires mediaUrl");
-    }
-    if (mediaUrl.startsWith("file://")) {
-        return fileURLToPath(mediaUrl);
-    }
-    return isAbsolute(mediaUrl) ? mediaUrl : resolvePath(mediaUrl);
-}
-async function resolveOutboundMedia(mediaUrl) {
-    const trimmed = mediaUrl.trim();
-    if (!/^https?:\/\//i.test(trimmed)) {
-        return { path: resolveLocalMediaPath(trimmed) };
-    }
-    const media = await readRemoteMediaBuffer({
-        url: trimmed,
-        maxBytes: REMOTE_MEDIA_MAX_BYTES,
-        maxRedirects: 5,
-        timeoutMs: 30000,
-        responseHeaderTimeoutMs: 15000,
-        readIdleTimeoutMs: 15000,
-    });
-    const contentType = media.contentType?.split(";")[0]?.trim().toLowerCase();
-    if (!contentType?.startsWith("image/") && !contentType?.startsWith("audio/")) {
-        throw new Error(`OneBot remote media must be an image or audio file, received ${contentType || "unknown content type"}`);
-    }
-    const extension = extensionForMime(contentType)
-        || extname(media.fileName ?? new URL(trimmed).pathname).toLowerCase()
-        || ".bin";
-    const tempDir = await mkdtemp(join(tmpdir(), "openclaw-onebot-media-"));
-    const mediaPath = join(tempDir, `remote${extension}`);
-    try {
-        await writeFile(mediaPath, media.buffer, { mode: 0o600 });
-        return {
-            path: mediaPath,
-            contentType,
-            cleanup: () => rm(tempDir, { recursive: true, force: true }),
-        };
-    }
-    catch (err) {
-        await rm(tempDir, { recursive: true, force: true }).catch(() => { });
-        throw err;
-    }
 }
 export const onebotPlugin = {
     id: "onebot",
@@ -167,9 +118,37 @@ export const onebotPlugin = {
     outbound: {
         deliveryMode: "direct",
         textChunkLimit: 4500,
+        sendPayload: async ({ to, payload, accountId, cfg }) => {
+            const tag = payload.channelData?.onebotDelivery;
+            if (!tag) {
+                // Legacy/core producers still use the same native durable lifecycle.
+                if (payload.mediaUrl || payload.mediaUrls?.length) throw new Error('媒体缺少业务来源与当前请求授权，未投递附件。');
+                return onebotPlugin.outbound.sendText({ to, text: payload.text, accountId, cfg });
+            }
+            const part = validateNativeDelivery(tag.id, tag.index, accountId ?? 'default', to);
+            const previousMessageId = acceptedPart(tag.id, tag.index);
+            if (previousMessageId) return { channel: 'onebot', messageId: previousMessageId };
+            const account = { ...resolveOneBotAccount(cfg, accountId), deliveryAdmission: () => validateNativeDelivery(tag.id, tag.index, accountId ?? 'default', to) };
+            const target = parseTarget(to);
+            if (part.type === 'text') {
+                const result = await sendText({ to, text: part.text, account, rewritePersona: false, durableRendered: true, mentions: part.mentions, ...nativeDeliveryContext(tag.id, tag.index, accountId ?? 'default', to) });
+                if (result.error || !result.messageId) throw new Error(result.error || 'missing platform receipt');
+                recordAcceptedPart(tag.id, tag.index, result.messageId);
+                return result;
+            }
+            const result = part.type === 'forward' ? await sendForwardTransport(account,target.type,target.id,part.nodes)
+                : part.type === 'image' ? await sendImage(account, target.type, target.id, part.path, part.caption)
+                : part.type === 'record' ? await sendRecord(account, target.type, target.id, part.path)
+                : await uploadFile(account, target.type, target.id, part.path, part.fileName ?? basename(part.path));
+            const receiptId = result.data?.message_id ?? (part.type === 'file' ? result.data?.file_id : undefined);
+            if (receiptId == null) throw new Error('missing platform receipt');
+            recordAcceptedPart(tag.id, tag.index, receiptId);
+            return { channel: 'onebot', messageId: String(receiptId), ...(result.data?.file_id && !result.data?.message_id ? { fileId: String(result.data.file_id) } : {}) };
+        },
         sendText: async ({ to, text, accountId, replyToId, cfg }) => {
             const account = resolveOneBotAccount(cfg, accountId);
-            const result = await sendText({ to, text, accountId, replyToId, account });
+            const workspaceAgentId = scopedAgent({ scope: 'automation', conversationId: 'public', roleAgentId: accountId === 'yuexia' ? 'onebot-yuexia' : 'main' });
+            const result = await sendText({ to, text, accountId, replyToId, account, workspaceAgentId });
             if (result.error) {
                 throw new Error(result.error);
             }
@@ -181,39 +160,8 @@ export const onebotPlugin = {
                 messageId: result.messageId,
             };
         },
-        sendMedia: async ({ to, text, mediaUrl, accountId, cfg }) => {
-            const account = resolveOneBotAccount(cfg, accountId);
-            const target = parseTarget(to);
-            const media = await resolveOutboundMedia(mediaUrl ?? "");
-            try {
-                const ext = extname(media.path).toLowerCase();
-                let mediaResult;
-                if (media.contentType?.startsWith("audio/") || AUDIO_EXTS.has(ext)) {
-                    mediaResult = await sendRecord(account, target.type, target.id, media.path);
-                }
-                else if (media.contentType?.startsWith("image/") || IMAGE_EXTS.has(ext)) {
-                    mediaResult = await sendImage(account, target.type, target.id, media.path);
-                }
-                else {
-                    mediaResult = await uploadFile(account, target.type, target.id, media.path, basename(media.path));
-                }
-                const caption = (text ?? "").trim() || "内容已经送到啦，请舰长查收♪";
-                const textResult = await sendText({ to, text: caption, accountId, account });
-                if (textResult.error) {
-                    throw new Error(textResult.error);
-                }
-                const textMessageId = textResult.messageId;
-                const mediaMessageId = mediaResult?.data && typeof mediaResult.data === "object" && "message_id" in mediaResult.data
-                    ? String(mediaResult.data.message_id)
-                    : undefined;
-                return {
-                    channel: "onebot",
-                    messageId: mediaMessageId ?? textMessageId ?? `${Date.now()}`,
-                };
-            }
-            finally {
-                await media.cleanup?.().catch(() => { });
-            }
+        sendMedia: async () => {
+            throw new Error('媒体必须经已授权业务产物与统一持久投递入口发送。');
         },
     },
     actions: {

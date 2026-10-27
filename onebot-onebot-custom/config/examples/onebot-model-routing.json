@@ -1,0 +1,7 @@
+{
+  "activePreset": "example",
+  "presets": {
+    "example": {}
+  },
+  "flashLiteFallbacks": []
+}

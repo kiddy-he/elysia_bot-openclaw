@@ -1,0 +1,1938 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpenClaw OneBot feature access configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "const": 1
+    },
+    "identities": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "adminIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "adminIds"
+      ]
+    },
+    "groups": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[0-9]+$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "requireMention": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled",
+          "roles",
+          "requireMention"
+        ]
+      }
+    },
+    "accounts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "groupIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "privateAdminIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "allowPrivateGuests": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "groupIds",
+          "privateAdminIds",
+          "allowPrivateGuests"
+        ]
+      }
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "identities": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "admin",
+                "member",
+                "visitor",
+                "internal"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "group",
+                "private"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "singleRoleInGroup": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "identities",
+          "scopes",
+          "singleRoleInGroup"
+        ]
+      }
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "conversation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "chat": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "media": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "quote": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "peer": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "mode": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "reset": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "chat",
+                "media",
+                "quote",
+                "peer",
+                "mode",
+                "reset"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "search": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "web": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "web"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "images": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "generate": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "edit": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "reference": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "generate",
+                "edit",
+                "reference"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "quota": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "query": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "refresh": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "query",
+                "refresh"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "alas": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "control": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "screenshot": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "read",
+                "control",
+                "screenshot"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "adsb": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "read"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "rewards": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "control": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "read",
+                "control"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "qzone": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "publish": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "interact": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "read",
+                "publish",
+                "interact"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "downloads": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "control": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "read",
+                "control"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "control": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "read",
+                "control"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "automation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "manage": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "manage"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "system": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tools": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "deliver": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "approve": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "tools",
+                "deliver",
+                "approve"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "bilibili": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "subscribe": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "read",
+                "subscribe"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "reminders": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "create": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "list": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "cancel": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "create",
+                "list",
+                "cancel"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "xiaohongshu": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "media": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "read",
+                "media"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "x": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                },
+                "media": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "read",
+                "media"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "github": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "read"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "v2ex": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "read"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "youtube": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "read"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "bilibili_video": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "read"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        },
+        "reddit": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "implemented": {
+              "type": "boolean"
+            },
+            "groupIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "accountIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "actions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "profile"
+                  ]
+                }
+              },
+              "required": [
+                "read"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "enabled",
+            "implemented",
+            "groupIds",
+            "accountIds",
+            "actions"
+          ]
+        }
+      },
+      "required": [
+        "conversation",
+        "search",
+        "images",
+        "quota",
+        "alas",
+        "adsb",
+        "rewards",
+        "qzone",
+        "downloads",
+        "network",
+        "automation",
+        "system",
+        "bilibili",
+        "reminders",
+        "xiaohongshu",
+        "x",
+        "github",
+        "v2ex",
+        "youtube",
+        "bilibili_video",
+        "reddit"
+      ]
+    },
+    "automationBindings": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "feature": {
+            "enum": [
+              "conversation",
+              "search",
+              "images",
+              "quota",
+              "alas",
+              "adsb",
+              "rewards",
+              "qzone",
+              "downloads",
+              "network",
+              "automation",
+              "system",
+              "bilibili",
+              "reminders",
+              "xiaohongshu"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "deliveryGroupIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "feature",
+          "name",
+          "deliveryGroupIds",
+          "enabled"
+        ]
+      }
+    }
+  },
+  "required": [
+    "version",
+    "identities",
+    "groups",
+    "accounts",
+    "profiles",
+    "features",
+    "automationBindings"
+  ]
+}

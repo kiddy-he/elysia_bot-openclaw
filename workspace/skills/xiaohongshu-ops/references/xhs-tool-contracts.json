@@ -1,0 +1,394 @@
+{
+  "version": 1,
+  "source": [
+    "src/schemas.js",
+    "src/tools.js"
+  ],
+  "note": "Generated parameter schemas and synthetic examples, not response schemas or live acceptance results. Host authorization is separate from model parameters.",
+  "tools": [
+    {
+      "name": "xhs_search_posts",
+      "operation": "search",
+      "description": "Search public Xiaohongshu notes by keyword or a topic/tag query. Tag mode uses the site keyword endpoint and reports that exact topic filtering is unverified.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "sort": {
+            "enum": [
+              "relevance",
+              "latest"
+            ]
+          },
+          "media_type": {
+            "enum": [
+              "image",
+              "video"
+            ]
+          },
+          "search_mode": {
+            "enum": [
+              "keyword",
+              "tag"
+            ]
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false
+      },
+      "example_params": {
+        "query": "咖啡",
+        "limit": 6,
+        "sort": "latest",
+        "media_type": "image",
+        "search_mode": "keyword"
+      }
+    },
+    {
+      "name": "xhs_inspect_posts",
+      "operation": "inspect",
+      "description": "Read note text, author, tags, media metadata and observed interaction counts.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ref_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 6,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "ref_ids"
+        ],
+        "additionalProperties": false
+      },
+      "example_params": {
+        "ref_ids": [
+          "https://www.xiaohongshu.com/explore/0123456789abcdef01234567?xsec_token=synthetic"
+        ]
+      }
+    },
+    {
+      "name": "xhs_read_comments",
+      "operation": "comments",
+      "description": "Read a bounded page of top level comments or replies. Returns an opaque continuation cursor scoped to this request.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ref_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "parent_comment_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "ref_id"
+        ],
+        "additionalProperties": false
+      },
+      "example_params": {
+        "ref_id": "https://www.xiaohongshu.com/explore/0123456789abcdef01234567?xsec_token=synthetic",
+        "limit": 20
+      }
+    },
+    {
+      "name": "xhs_get_profile",
+      "operation": "profile",
+      "description": "Read a public creator profile and optionally one bounded page of posted notes.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "include_posts": {
+            "type": "boolean"
+          },
+          "posts_limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          },
+          "posts_cursor": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "additionalProperties": false
+      },
+      "example_params": {
+        "user_id": "0123456789abcdef01234567",
+        "include_posts": true,
+        "posts_limit": 20
+      }
+    },
+    {
+      "name": "xhs_list_images",
+      "operation": "list_images",
+      "description": "List scoped image handles for a note without exposing signed CDN URLs to the model.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ref_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 159
+          }
+        },
+        "required": [
+          "ref_id"
+        ],
+        "additionalProperties": false
+      },
+      "example_params": {
+        "ref_id": "https://www.xiaohongshu.com/explore/0123456789abcdef01234567?xsec_token=synthetic",
+        "offset": 0
+      }
+    },
+    {
+      "name": "xhs_download_images",
+      "operation": "download_images",
+      "description": "Queue bounded image downloads and return scoped artifact jobs.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "image_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "best_available",
+              "original_only"
+            ]
+          },
+          "constraints": {
+            "type": "object",
+            "properties": {
+              "published_after": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "published_before": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "author_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "image_ids"
+        ],
+        "additionalProperties": false
+      },
+      "example_params": {
+        "image_ids": [
+          "img-example"
+        ],
+        "quality": "best_available"
+      }
+    },
+    {
+      "name": "xhs_download_video",
+      "operation": "download_video",
+      "description": "Queue a bounded native MP4 download when the note exposes a compatible stream.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ref_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "best_available",
+              "original_only"
+            ]
+          },
+          "constraints": {
+            "type": "object",
+            "properties": {
+              "published_after": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "published_before": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "author_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "ref_id"
+        ],
+        "additionalProperties": false
+      },
+      "example_params": {
+        "ref_id": "https://www.xiaohongshu.com/explore/0123456789abcdef01234567?xsec_token=synthetic",
+        "quality": "best_available"
+      }
+    },
+    {
+      "name": "xhs_job_status",
+      "operation": "job_status",
+      "description": "Read a download job owned by this request scope.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "additionalProperties": false
+      },
+      "example_params": {
+        "job_id": "job-example"
+      }
+    },
+    {
+      "name": "xhs_cancel_job",
+      "operation": "cancel_job",
+      "description": "Cancel a queued or running download job owned by this request scope.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "additionalProperties": false
+      },
+      "example_params": {
+        "job_id": "job-example"
+      }
+    },
+    {
+      "name": "xhs_read_artifact",
+      "operation": "artifact",
+      "description": "Read and integrity-check a completed local artifact owned by this request scope.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "artifact_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "artifact_id"
+        ],
+        "additionalProperties": false
+      },
+      "example_params": {
+        "artifact_id": "art-example"
+      }
+    }
+  ],
+  "operator_only": [
+    {
+      "operation": "status",
+      "registered_as_model_tool": false,
+      "requires": "trustedContext.operator === true",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "example_params": {}
+    },
+    {
+      "operation": "login",
+      "registered_as_model_tool": false,
+      "requires": "trustedContext.operator === true",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "example_params": {}
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "checked_at": "2026-10-23T09:38:20.107325+08:00",
+  "feature": "xhs_login_required_recovery",
+  "trigger": "one explicit login_required; repeated 461 threshold unchanged",
+  "focused_tests": 15,
+  "new_tests": 4,
+  "full_deploy_checks": "passed (124 files and all plugin tests)",
+  "real_sms_requested": false,
+  "real_qq_test_messages_sent": false,
+  "coverage": [
+    "production result adapter observes root/nested login failures",
+    "reason-specific private admin phone request",
+    "quoted phone and OTP flow",
+    "same flow for concurrent requests",
+    "hourly cooldown",
+    "no post-login loop",
+    "failed workflow operation and download job resume",
+    "completed, forbidden and different-request work retained",
+    "session_invalid and permission/rate-limit errors excluded"
+  ],
+  "note": "Real SMS delivery and authentication require a subsequent genuine business request and admin quoted reply."
+}

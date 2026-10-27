@@ -1,0 +1,1 @@
+Migrated from /root/komachi-xhs-js (MIT), 2026-10-21. OneBot integration uses the existing HTTP backend and authenticated session. Login/browser operator tools are not registered as chat tools.

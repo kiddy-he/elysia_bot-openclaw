@@ -1,0 +1,17 @@
+services:
+  bilibili-notify:
+    profiles: [deferred-live]
+    image: ${BILIBILI_NOTIFY_IMAGE:-akokk0/bilibili-notify:latest}
+    container_name: openclaw-bilibili-notify
+    restart: unless-stopped
+    network_mode: host
+    env_file: .env
+    environment:
+      # Host networking lets the upstream reach the loopback-only OpenClaw
+      # webhook. Bind its dashboard to loopback as well.
+      BN_HOST: 127.0.0.1
+      BN_PORT: "8787"
+    volumes:
+      - ./data:/data
+      - ./config:/config
+      - ./runtime/index.mjs:/app/index.mjs:ro

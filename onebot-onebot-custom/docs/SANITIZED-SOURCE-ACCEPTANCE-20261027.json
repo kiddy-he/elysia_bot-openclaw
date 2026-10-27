@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "files": 489,
+  "bytes": 3648527,
+  "identityMappings": 32,
+  "realSecrets": 0,
+  "originalIdentityMatches": 0,
+  "privateIPs": 0,
+  "excluded": [
+    "credentials",
+    "cookies",
+    "state",
+    "chat history",
+    "media",
+    "dependencies",
+    "browser profiles"
+  ],
+  "validation": {
+    "javascriptSyntaxChecks": 328,
+    "pythonSyntaxChecks": 18
+  },
+  "workingRuntimeFilesModified": false,
+  "staged": false,
+  "knownLocalSecretsCompared": 16,
+  "knownLocalSecretMatches": 0,
+  "urlCredentialChecks": [
+    "http",
+    "https",
+    "ws",
+    "wss",
+    "socks",
+    "database"
+  ],
+  "debugProbeExcluded": true,
+  "liveRootConfigurationsExcluded": true,
+  "configurationExamples": 13,
+  "sanitizerTestsPassed": 22,
+  "localOnly": true,
+  "historyPrivacyRewrite": true,
+  "historicalCommitsRewritten": 8,
+  "commitGuardIncluded": true,
+  "stagedWhitespaceChecks": "passed",
+  "validationScope": "generic source archive; live runtime configuration not tracked"
+}

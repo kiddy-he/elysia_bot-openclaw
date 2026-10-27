@@ -1,0 +1,88 @@
+{
+  "startedAt": "2026-10-23T10:08:56.207Z",
+  "realQQTestMessagesSent": 0,
+  "stages": [
+    {
+      "name": "real-inbound-classification",
+      "durationMs": 2124,
+      "quotaAction": "query"
+    },
+    {
+      "name": "official-classification-with-primary-failure-injected",
+      "durationMs": 1449,
+      "quotaAction": "query"
+    },
+    {
+      "name": "real-readonly-quota",
+      "durationMs": 59
+    },
+    {
+      "name": "real-full-persona-generation",
+      "durationMs": 32200,
+      "candidates": [
+        {
+          "attempt": 0,
+          "valid": true,
+          "text": "测试成员，查到的剩余额度在这里哦，目前是缓存数据♪\n\ngemini-3.1-flash-image：\n5小时配额：剩余 85.87%，重置 10/23 18:55（北京时间）\n周配额：剩余 0.54%，重置 10/24 06:15（北京时间）\n\ngemini-3.8-flash-high：\n5小时配额：剩余 85.87%，重置 10/23 18:55（北京时间）\n周配额：剩余 0.54%，重置 10/24 06:15（北京时间）\n\nclaude-opus-5-5-low：\n5小时配额：剩余 100%，重置 10/23 23:02（北京时间）\n周配额：剩余 100%，重置 10/30 18:02（北京时间）\n\n两项 Gemini 共用 Gemini 配额组；Claude 使用 Claude/GPT 配额组。"
+        }
+      ]
+    },
+    {
+      "name": "admin-private-and-group-transport-capture",
+      "passed": true,
+      "captures": 2
+    },
+    {
+      "name": "real-guest-speech-review",
+      "durationMs": 2559,
+      "allow": true,
+      "reason": "passed",
+      "model": "antigravity/gemini-3.5-flash-lite"
+    }
+  ],
+  "ok": true,
+  "durationMs": 38651,
+  "reply": "测试成员，查到的剩余额度在这里哦，目前是缓存数据♪\n\ngemini-3.1-flash-image：\n5小时配额：剩余 85.87%，重置 10/23 18:55（北京时间）\n周配额：剩余 0.54%，重置 10/24 06:15（北京时间）\n\ngemini-3.8-flash-high：\n5小时配额：剩余 85.87%，重置 10/23 18:55（北京时间）\n周配额：剩余 0.54%，重置 10/24 06:15（北京时间）\n\nclaude-opus-5-5-low：\n5小时配额：剩余 100%，重置 10/23 23:02（北京时间）\n周配额：剩余 100%，重置 10/30 18:02（北京时间）\n\n两项 Gemini 共用 Gemini 配额组；Claude 使用 Claude/GPT 配额组。",
+  "verification": {
+    "fullTestsPassed": 339,
+    "sourceRuntimeFilesIdentical": 125,
+    "configValid": true,
+    "officialText": {
+      "ok": true,
+      "elapsedMs": 1236
+    },
+    "officialImage": {
+      "candidates": [
+        {
+          "content": {
+            "parts": [
+              {
+                "text": "{\"color\":\"red\"}"
+              }
+            ]
+          },
+          "finishReason": "STOP"
+        }
+      ],
+      "onebot_model": "gemini-official/gemini-3.5-flash-lite"
+    },
+    "keyFileMode": "0600",
+    "deploymentBackup": "/root/.openclaw/state/backups/onebot-dist-pre-deploy-1792750192581",
+    "gateway": {
+      "active": true,
+      "pid": 697167,
+      "defaultReadyAt": "2026-10-23T18:11:47.465+08:00",
+      "yuexiaReadyAt": "2026-10-23T18:11:47.461+08:00"
+    }
+  },
+  "qqAdminNotification": {
+    "sentAt": "2026-10-23T10:12:05.678Z",
+    "target": "private:700000003",
+    "accountId": "default",
+    "platformMessageId": "[omitted]",
+    "result": {
+      "channel": "onebot",
+      "messageId": "[omitted]"
+    }
+  }
+}

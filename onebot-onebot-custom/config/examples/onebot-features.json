@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "identities": {
+    "adminIds": [
+      "700000001"
+    ]
+  },
+  "groups": {
+    "700000002": {
+      "profile": "example"
+    }
+  },
+  "accounts": {
+    "example": {
+      "privateAdminIds": [
+        "700000001"
+      ],
+      "groupIds": [
+        "700000002"
+      ]
+    }
+  },
+  "profiles": {},
+  "features": {},
+  "automationBindings": {}
+}

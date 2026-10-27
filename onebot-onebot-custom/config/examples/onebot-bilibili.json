@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "enabled": false,
+  "secretFile": "${EXAMPLE_BILIBILI_SECRET_FILE}",
+  "upstream": "${EXAMPLE_BILIBILI_URL}",
+  "routes": []
+}

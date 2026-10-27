@@ -1,0 +1,491 @@
+{
+  "id": "openclaw-onebot",
+  "name": "OneBot",
+  "description": "OneBot 11 channel plugin (NapCat/go-cqhttp)",
+  "version": "1.3.0-local.20261016",
+  "channels": [
+    "onebot"
+  ],
+  "channelEnvVars": {
+    "onebot": [
+      "ONEBOT_WS_URL",
+      "ONEBOT_HTTP_URL",
+      "ONEBOT_ACCESS_TOKEN",
+      "ONEBOT_SHARED_DIR",
+      "ONEBOT_CONTAINER_SHARED_DIR"
+    ]
+  },
+  "configSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "channelConfigs": {
+    "onebot": {
+      "label": "OneBot",
+      "description": "OneBot 11 channel settings for NapCat/go-cqhttp",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name for this account"
+          },
+          "wsUrl": {
+            "type": "string",
+            "description": "OneBot WebSocket URL"
+          },
+          "httpUrl": {
+            "type": "string",
+            "description": "OneBot HTTP API URL"
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "Sensitive access token for the OneBot API; keep endpoints on localhost or a trusted network"
+          },
+          "sharedDir": {
+            "type": "string",
+            "description": "Host directory mounted into NapCat for outbound media/files"
+          },
+          "containerSharedDir": {
+            "type": "string",
+            "description": "Container path corresponding to the shared host directory"
+          },
+          "allowFrom": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Allowed sources (e.g. private:123, group:456). Configure this for trusted QQ users or groups before enabling text commands."
+          },
+          "groupAllowFrom": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "deprecated": true,
+            "description": "Deprecated legacy group allow-list; use allowFrom instead"
+          },
+          "groupAutoReact": {
+            "type": "boolean",
+            "default": false,
+            "description": "Automatically add a reaction to inbound group messages"
+          },
+          "groupAutoReactEmojiId": {
+            "description": "QQ/NapCat emoji id used for automatic group reactions",
+            "default": 1,
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "configWrites": {
+            "type": "boolean",
+            "description": "Allow channel-initiated config writes"
+          },
+          "commands": {
+            "type": "object",
+            "properties": {
+              "native": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "string",
+                    "const": "auto"
+                  }
+                ]
+              },
+              "nativeSkills": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "string",
+                    "const": "auto"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "textChunkLimit": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "chunkMode": {
+            "type": "string",
+            "enum": [
+              "length",
+              "newline"
+            ]
+          },
+          "blockStreaming": {
+            "type": "boolean"
+          },
+          "blockStreamingCoalesce": {
+            "type": "object",
+            "properties": {
+              "minChars": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "maxChars": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "idleMs": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false,
+            "description": "Block streaming coalescing options for OneBot replies"
+          },
+          "streaming": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "off",
+                  "partial",
+                  "block",
+                  "progress"
+                ]
+              },
+              "chunkMode": {
+                "type": "string",
+                "enum": [
+                  "length",
+                  "newline"
+                ]
+              },
+              "block": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "coalesce": {
+                    "type": "object",
+                    "properties": {
+                      "minChars": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "maxChars": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "idleMs": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false
+              },
+              "preview": {
+                "type": "object",
+                "properties": {
+                  "toolProgress": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "nativeTransport": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          },
+          "accounts": {
+            "type": "object",
+            "description": "Additional OneBot accounts",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "wsUrl": {
+                  "type": "string"
+                },
+                "httpUrl": {
+                  "type": "string"
+                },
+                "accessToken": {
+                  "type": "string",
+                  "description": "Sensitive access token for the OneBot API; keep endpoints on localhost or a trusted network"
+                },
+                "sharedDir": {
+                  "type": "string"
+                },
+                "containerSharedDir": {
+                  "type": "string"
+                },
+                "allowFrom": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Allowed sources (e.g. private:123, group:456). Configure this for trusted QQ users or groups before enabling text commands."
+                },
+                "groupAllowFrom": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "deprecated": true
+                },
+                "groupAutoReact": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "groupAutoReactEmojiId": {
+                  "default": 1,
+                  "oneOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "configWrites": {
+                  "type": "boolean"
+                },
+                "commands": {
+                  "type": "object",
+                  "properties": {
+                    "native": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "string",
+                          "const": "auto"
+                        }
+                      ]
+                    },
+                    "nativeSkills": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "string",
+                          "const": "auto"
+                        }
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "textChunkLimit": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "chunkMode": {
+                  "type": "string",
+                  "enum": [
+                    "length",
+                    "newline"
+                  ]
+                },
+                "blockStreaming": {
+                  "type": "boolean"
+                },
+                "blockStreamingCoalesce": {
+                  "type": "object",
+                  "properties": {
+                    "minChars": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "maxChars": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "idleMs": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "streaming": {
+                  "type": "object",
+                  "properties": {
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "off",
+                        "partial",
+                        "block",
+                        "progress"
+                      ]
+                    },
+                    "chunkMode": {
+                      "type": "string",
+                      "enum": [
+                        "length",
+                        "newline"
+                      ]
+                    },
+                    "block": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "coalesce": {
+                          "type": "object",
+                          "properties": {
+                            "minChars": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0
+                            },
+                            "maxChars": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0
+                            },
+                            "idleMs": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "preview": {
+                      "type": "object",
+                      "properties": {
+                        "toolProgress": {
+                          "type": "boolean"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "nativeTransport": {
+                      "type": "boolean"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "uiHints": {
+        "wsUrl": {
+          "label": "WebSocket URL",
+          "placeholder": "ws://localhost:3001"
+        },
+        "httpUrl": {
+          "label": "HTTP API URL",
+          "placeholder": "http://localhost:3001"
+        },
+        "accessToken": {
+          "label": "Access token",
+          "sensitive": true
+        },
+        "sharedDir": {
+          "label": "Shared directory"
+        },
+        "containerSharedDir": {
+          "label": "Container shared directory",
+          "placeholder": "/shared"
+        }
+      }
+    }
+  },
+  "contracts": {
+    "tools": [
+      "github_search",
+      "github_read",
+      "v2ex_hot",
+      "v2ex_node",
+      "v2ex_read",
+      "v2ex_user",
+      "youtube_search",
+      "youtube_read",
+      "youtube_subtitle",
+      "bilibili_video_search",
+      "bilibili_video_read",
+      "bilibili_video_hot",
+      "bilibili_video_subtitle",
+      "reddit_search",
+      "reddit_read",
+      "reddit_subreddit",
+      "reach_xhs_search",
+      "reach_xhs_read",
+      "reach_xhs_comments",
+      "x_search_posts",
+      "x_inspect_posts",
+      "x_media_workflow",
+      "xhs_search_posts",
+      "xhs_inspect_posts",
+      "xhs_read_comments",
+      "xhs_get_profile",
+      "xhs_list_images",
+      "xhs_download_images",
+      "xhs_download_video",
+      "xhs_send_media",
+      "xhs_job_status",
+      "xhs_cancel_job",
+      "xhs_read_artifact",
+      "xhs_media_workflow",
+      "reminder_create",
+      "reminder_list",
+      "reminder_cancel",
+      "tts_synthesize",
+      "adsb_query",
+      "alas_status",
+      "alas_screenshot",
+      "rewards_summary",
+      "rewards_control",
+      "downloads_query",
+      "qzone_read",
+      "quota_query",
+      "quota_refresh",
+      "onebot_image_generate",
+      "image_edit",
+      "image_reference",
+      "downloads_control",
+      "qzone_publish",
+      "qzone_interact",
+      "network_status",
+      "network_control",
+      "bilibili_status",
+      "bilibili_subscribe",
+      "automation_query",
+      "automation_manage",
+      "alas_control"
+    ]
+  }
+}

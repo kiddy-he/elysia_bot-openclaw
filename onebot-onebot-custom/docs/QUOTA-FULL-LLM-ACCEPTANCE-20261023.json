@@ -1,0 +1,20 @@
+{
+  "durationMs": 34270,
+  "candidates": [
+    {
+      "attempt": 0,
+      "valid": true,
+      "candidate": "测试成员，我查到的剩余额度是缓存数据哦：gemini-3.1-flash-image，5小时配额剩余 85.29%，重置 10/23 18:55（北京时间）；周配额剩余 0.07%，重置 10/24 06:15（北京时间）。gemini-3.8-flash-high，5小时配额剩余 85.29%，重置 10/23 18:55（北京时间）；周配额剩余 0.07%，重置 10/24 06:15（北京时间）。这两项 Gemini 共用 Gemini 配额组。claude-opus-5-5-low，5小时配额剩余 100%，重置 10/23 22:17（北京时间）；周配额剩余 100%，重置 10/30 17:17（北京时间），用的是 Claude/GPT 配额组。"
+    }
+  ],
+  "reply": "测试成员，我查到的剩余额度是缓存数据哦：gemini-3.1-flash-image，5小时配额剩余 85.29%，重置 10/23 18:55（北京时间）；周配额剩余 0.07%，重置 10/24 06:15（北京时间）。gemini-3.8-flash-high，5小时配额剩余 85.29%，重置 10/23 18:55（北京时间）；周配额剩余 0.07%，重置 10/24 06:15（北京时间）。这两项 Gemini 共用 Gemini 配额组。claude-opus-5-5-low，5小时配额剩余 100%，重置 10/23 22:17（北京时间）；周配额剩余 100%，重置 10/30 17:17（北京时间），用的是 Claude/GPT 配额组。",
+  "completeReplyValidated": true,
+  "qqSent": false,
+  "validation": "Complete LLM response; no host concatenation; initial 503 triggered configured fallback chain",
+  "testVerification": {
+    "focusedTestsPassed": 31,
+    "fullDeploymentCheck": "passed",
+    "sourceRuntimeMatch": true,
+    "realQQTestMessagesSent": 0
+  }
+}

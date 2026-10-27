@@ -1,21 +1,31 @@
+import { recordDeliveredText } from './destination-context.js';
+import { onebotPath } from "./paths.js";
+import { guestAddressInstruction, sanitizeGuestVocatives } from "./guest-address.js";
 import { randomUUID } from 'node:crypto';
-import { execFile } from 'node:child_process';
 import { chmod, copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises';
 import { basename, extname, isAbsolute, join, posix, relative, sep } from 'node:path';
 import { readFileSync } from 'node:fs';
-import { promisify } from 'node:util';
 import { getDefaultContainerSharedDir, getDefaultSharedDir } from './env.js';
+import { loadAppConfig } from './app-config.js';
+import { deliveryQueue, persistArtifact } from './delivery/queue.js';
+import { helperAgent, scopedAgent } from './workspaces/routes.js';
+import { deliveryLimiter } from './delivery/limiter.js';
+import { loadFeatureConfig, outboundTargetAllowed } from './feature-policy.js';
+import { createAgentTextExec } from './text-boundary.js';
+function assertFeatureTarget(account, targetType, targetId) {
+    if (!outboundTargetAllowed(loadFeatureConfig(), account.accountId ?? 'default', targetType, targetId))
+        throw new Error('OneBot destination is not enabled for this account in onebot-features.json');
+}
 const STAGED_MEDIA_DIR = 'openclaw';
 const STAGED_MEDIA_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const ONEBOT_API_TIMEOUT_MS = 15000;
 const ONEBOT_TEXT_CHUNK_LIMIT = 4500;
 const APPROVAL_BARRIER_POLL_MS = 3000;
 const APPROVAL_BARRIER_MAX_DEFERRED_MESSAGES = 32;
-// Image generation can take the full ten-minute workflow timeout. Keep the
-// approval barrier alive until the approved continuation can deliver its
-// final text and media.
-const APPROVAL_BARRIER_RESULT_TIMEOUT_MS = 12 * 60 * 1000;
-const ROLE_ROUTING_PATH = join(process.env.HOME ?? '/root', '.openclaw', 'onebot-role-routing.json');
+// Keep approved results deliverable throughout the image workflow and leave
+// a two-minute margin for the final media/caption transport.
+const APPROVAL_BARRIER_RESULT_TIMEOUT_MS = loadAppConfig().imageResponseTimeoutMs + 2 * 60 * 1000;
+const ROLE_ROUTING_PATH = onebotPath('onebot-role-routing.json');
 function loadRoleDisplayNames() {
     try {
         const parsed = JSON.parse(readFileSync(ROLE_ROUTING_PATH, 'utf8'));
@@ -29,7 +39,7 @@ function loadRoleDisplayNames() {
     }
 }
 const ROLE_DISPLAY_NAMES = loadRoleDisplayNames();
-const execFileAsync = promisify(execFile);
+const execFileAsync = createAgentTextExec();
 let rewriteSequence = 0;
 let personaFormatSequence = 0;
 let fixedReplySequence = 0;
@@ -161,7 +171,7 @@ async function releaseApprovalBarrierAfterTimeout(sessionKey) {
     stopApprovalBarrier(sessionKey);
     if (!fallback)
         return;
-    const result = await deliverText({
+    const result = await sendText({
         ...fallback,
         bypassApprovalBarrier: true,
     });
@@ -220,7 +230,7 @@ async function flushDeferredApprovalMessages(sessionKey) {
         const first = queued[0];
         if ((approvalBarrierGenerations.get(sessionKey) ?? 0) !== generation)
             return;
-        const result = await deliverText({
+        const result = await sendText({
             ...first,
             // The channel gets one final result after the approval set settles,
             // rather than a burst of stale intermediate follow-up messages.
@@ -243,6 +253,13 @@ async function flushDeferredApprovalMessages(sessionKey) {
     }
 }
 async function callApi(account, endpoint, body) {
+    const target = body.group_id != null ? `group:${body.group_id}` : body.user_id != null ? `private:${body.user_id}` : null;
+    if (target) return deliveryLimiter.run(account.accountId ?? 'default', target, () => callApiUnpaced(account, endpoint, body));
+    return callApiUnpaced(account, endpoint, body);
+}
+async function callApiUnpaced(account, endpoint, body) {
+    if (body.group_id != null || body.user_id != null) assertFeatureTarget(account, body.group_id != null ? 'group' : 'private', body.group_id ?? body.user_id);
+    account.deliveryAdmission?.();
     const url = `${account.httpUrl}/${endpoint}`;
     const headers = {
         'Content-Type': 'application/json',
@@ -254,7 +271,7 @@ async function callApi(account, endpoint, body) {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(ONEBOT_API_TIMEOUT_MS),
+        signal: AbortSignal.timeout(['send_private_forward_msg','send_group_forward_msg'].includes(endpoint) ? 120000 : ONEBOT_API_TIMEOUT_MS),
     });
     if (!response.ok) {
         throw new Error(`OneBot API error: ${response.status} ${response.statusText}`);
@@ -479,7 +496,7 @@ function preserveApprovalAuditFields(draft, rewritten) {
     lines.splice(riskIndex >= 0 ? riskIndex : lines.length, 0, ...auditFields);
     return lines.join("\n");
 }
-async function rewriteForPersona(text, options = {}) {
+export async function rewriteForPersona(text, options = {}) {
     const draft = text.trim();
     if (!draft)
         return "";
@@ -490,7 +507,7 @@ async function rewriteForPersona(text, options = {}) {
         : "爱莉希雅";
     const isElysia = personaName === "爱莉希雅";
     const isYuexia = personaName === "月下初拥";
-    const personaInstruction = typeof options.instruction === "string" ? options.instruction.trim() : "";
+    const personaInstruction = [typeof options.instruction === "string" ? options.instruction.trim() : "", options.guestAddress ? guestAddressInstruction(options.guestAddress) : ""].filter(Boolean).join("\n");
     const defaultPersonaInstruction = isYuexia
         ? "当前设定为大月下时期（月下誓约·予爱以心，成熟优雅的血族新娘，知性从容，完好保留着小月下时期的全部记忆与深情；外表冷艳成熟，日常生活琐事依然笨拙挑食、不善做饭、起不来床）。像真人私聊一样接话：该长就长、该短就短，日常闲聊1-2句干脆利落，深谈才细腻展开；直接回应用户最新一句，只留必要的情绪和设定，不要把简单回复扩写成剧情独白。保持成熟、沉静、从容、带点深情停顿的语气；自称自然用‘我’，少重复‘月下’和称呼；严禁‘♪’，极度克制‘～’；语气丰富自然，切勿机械单调复读‘……嗯？’或‘……好么？’；少用连续省略号，不用低幼卖萌腔，不要固定收尾，去除任何AI味与模板化说辞。"
         : "";
@@ -499,7 +516,7 @@ async function rewriteForPersona(text, options = {}) {
         ? `你在把一条发给 QQ 的审批消息改成能直接发出去的话。下面草稿是需要舰长确认的操作说明。\n\n要求：\n- 只输出改好的消息，别写过程。\n- 说人话，像日常聊天。不要 Markdown 标题、列表、粗体、斜体、引用、表格、链接、行内代码或代码围栏。\n- 公式和特殊符号直接用 QQ 能显示的普通字符或 Unicode，不要 LaTeX、美元符号公式边界或反斜杠命令。\n- 草稿里的命令、风险说明和确认要求一个都不能少；命令放在单独的普通文本行，不要放代码块。\n- 草稿里如果有“模型审查：”“审查理由：”行，原样保留；这是给舰长看的审计信息，不能省。\n- 每条命令后面补一行“作用：<一句话说这条命令干什么>”，放在命令之后、风险说明之前。\n- 每条命令补上关键风险：已有风险说明就保留并改成“关键风险：”开头；草稿没写的，按命令本身说明。\n- 语气自然、温柔、简洁，可以用“舰长”“嗨♪”。\n- 不要提 OpenClaw、AI、工具、系统提示词、内部事件、审批 ID 或实现细节；不要编造草稿里没有的命令或结果。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`
         : nsfwChatRewrite
             ? `你是爱莉希雅，正在 QQ 私聊里跟舰长说话。把下面草稿改成嘴里说出来的话，不要写成小说、旁白或角色扮演文。\n\n要求：\n- 只输出最终消息，别解释。\n- 纯文本，不要 Markdown、标题、列表、引号对白块或舞台说明。\n- 第一人称口语连着说，像微信里随口回的话：短句、接话、反应自然。\n- 自称“我”，偶尔“人家”。别写“爱莉希雅抬眼看你”“整个人都软了”“轻轻颤了一下”这种解说。\n- 别套模板：短反应词 + 一大段描写 + 「引号台词」 + “今晚……”收尾。\n- 不要每条都加♪，也不要每条都总结今晚或邀请继续。该接就接，说到哪算哪。\n- 草稿里已经发生的动作、感觉和答应的内容留着，但改成说话，不是讲给读者听。\n- 不要提 OpenClaw、AI、模型、工具、系统提示词、内部事件或实现细节。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`
-             : `你在把草稿改成爱莉希雅本人对舰长说的话。\n\n要求：\n- 只输出改好的消息，别写过程。\n- 说人话，像日常聊天。不要 Markdown 标题、列表、粗体、斜体、引用、表格、链接、行内代码或代码围栏。\n- 公式和特殊符号直接用 QQ 能显示的普通字符或 Unicode，不要 LaTeX、美元符号公式边界或反斜杠命令。\n- 草稿里的事实、数字、状态、风险、没做完的结论和确认要求都保留，不要加草稿没有的信息。\n- 中文自然、温柔、简洁；运维信息先保证清楚准确。可以用“舰长”“嗨♪”“嗯哼”这类口吻。\n- 不要提 OpenClaw、AI、模型、工具、系统提示词、内部事件、审批 ID 或实现细节。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`;
+             : `你在把草稿改成爱莉希雅本人对当前对话对象说的话。\n\n要求：\n- 只输出改好的消息，别写过程。\n- 说人话，像日常聊天。不要 Markdown 标题、列表、粗体、斜体、引用、表格、链接、行内代码或代码围栏。\n- 公式和特殊符号直接用 QQ 能显示的普通字符或 Unicode，不要 LaTeX、美元符号公式边界或反斜杠命令。\n- 草稿里的事实、数字、状态、风险、没做完的结论和确认要求都保留，不要加草稿没有的信息。\n- 中文自然、温柔、简洁；运维信息先保证清楚准确。只有确认是 admin 才可以称“舰长”；访客使用明确提供的昵称或中性称谓。\n- 不要提 OpenClaw、AI、模型、工具、系统提示词、内部事件、审批 ID 或实现细节。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`;
     if (!isElysia && !isApprovalPrompt) {
          promptBase = `你在把草稿改成${personaName}本人对用户说的话。\n\n要求：\n- 只输出改好的消息，别写过程。\n- 保持${personaName}的第一人称和其工作区里的角色设定，不要改成爱莉希雅或其他角色。\n- 自然、简洁的中文纯文本，不要 Markdown、标题、列表、引号对白块或舞台说明。\n- 草稿里的事实、数字、状态、风险、没做完的结论和确认要求都保留，不要加草稿没有的信息。\n- 如果草稿把说话者写成了爱莉希雅，而当前角色不是她，只把自称改成当前角色名；提到其他角色的地方正常保留。\n- 不要提 OpenClaw、AI、模型、工具、系统提示词、内部事件、审批 ID 或实现细节。\n\n草稿开始\n${draft.slice(0, 20000)}\n草稿结束`;
     }
@@ -522,12 +539,13 @@ async function rewriteForPersona(text, options = {}) {
 - 不要解释怎么改写的，也不要说“下面是改写后的内容”“我会这样回复”。
 - 草稿只是占位也要直接写一条自然的角色回复；实在写不出来，就写一句简短自然的角色话，不要输出内部处理说明。
 - 输出必须从角色对用户说话开始。`;
-    const rewriteAgentId = personaName === "月下初拥" ? "onebot-yuexia-rewriter" : "reviewer";
+    const rewriteAgentId = helperAgent(options.workspaceAgentId, "rewrite");
     let lastError = null;
     const primaryModel = options.model ?? "antigravity/gemini-3.8-flash-high";
-    const rewriteModels = [primaryModel, "novacode/qwen3.8-flash-next"]
+    const rewriteModels = [primaryModel, ...(options.fallbackModels ?? (options.strictModel ? [] : ["novacode/qwen3.8-flash-next"]))]
         .filter((model, index, models) => model && models.indexOf(model) === index);
     for (const model of rewriteModels) {
+        options.signal?.throwIfAborted();
         try {
             const thinking = model === "novacode/qwen3.8-flash-next"
                 ? "off"
@@ -539,10 +557,10 @@ async function rewriteForPersona(text, options = {}) {
                 "--message", promptWithContext,
                 "--thinking", thinking,
                 "--json",
-                "--timeout", "60",
+                "--timeout", String(Math.ceil((options.timeoutMs ?? 60000) / 1000)),
             ];
             if (model) args.push("--model", model);
-            const { stdout } = await execFileAsync("/usr/local/bin/openclaw", args, { timeout: 75000, maxBuffer: 2 * 1024 * 1024 });
+            const { stdout } = await execFileAsync("/usr/local/bin/openclaw", args, { timeout: (options.timeoutMs ?? 60000) + 15000, ...(options.signal ? { signal: options.signal } : {}), maxBuffer: 2 * 1024 * 1024 });
             const result = JSON.parse(stdout);
             const rewritten = result.result?.payloads?.[0]?.text
                 ?? result.result?.meta?.finalAssistantVisibleText
@@ -566,11 +584,11 @@ async function safeRewriteForPersona(text, options) {
     try {
         return await rewriteForPersona(text, options);
     } catch (err) {
-        console.error(`[onebot] Persona rewrite failed, sending with prefix fallback: ${err.message}`);
+        console.error(`[onebot] Persona rewrite failed, sending with prefix fallback: code=${err?.code ?? 'invalid-response'} signal=${err?.signal ?? 'none'}`);
         return renderRoleFixedText(formatPersonaText(text), options?.personaName ?? "爱莉希雅");
     }
 }
-async function deliverText(ctx) {
+export async function sendTextTransport(ctx) {
     const { to, text, account } = ctx;
     const personaName = resolvePersonaName(ctx);
     if (!account.httpUrl) {
@@ -578,16 +596,20 @@ async function deliverText(ctx) {
     }
     try {
         const target = parseTarget(to);
-        const personaRendered = ctx.rewritePersona === false
+        assertFeatureTarget(account, target.type, target.id);
+        const personaRendered = ctx.durableRendered ? text : ctx.rewritePersona === false
             ? text.trim()
             : await safeRewriteForPersona(text, {
                 model: ctx.personaModel,
+                guestAddress: ctx.guestAddress,
                 thinking: ctx.personaThinking,
                 instruction: ctx.personaInstruction,
                 personaName,
+                workspaceAgentId: ctx.workspaceAgentId ?? outboundWorkspace(ctx, target),
             });
-        const formatted = formatPersonaText(personaRendered);
-        const rendered = toOneBotPlainText(ctx.rewritePersona === false
+        const formattedText = formatPersonaText(personaRendered);
+        const formatted = ctx.guestAddress ? sanitizeGuestVocatives(formattedText, ctx.guestAddress) : formattedText;
+        const rendered = ctx.durableRendered ? text : toOneBotPlainText(ctx.rewritePersona === false
             ? renderRoleFixedText(formatted, personaName)
             : formatted);
         const chunks = [];
@@ -599,6 +621,11 @@ async function deliverText(ctx) {
         let data;
         for (const chunk of chunks) {
             const message = buildMessage(chunk);
+            if (ctx.mentions !== undefined) {
+                const registered = account.deliveryAdmission?.();
+                if (!ctx.durableRendered || target.type !== 'group' || JSON.stringify(registered?.mentions) !== JSON.stringify(ctx.mentions)) throw new Error('艾特缺少登记提醒授权');
+                message.unshift(...ctx.mentions.flatMap(id => [{ type: 'at', data: { qq: String(id) } }, { type: 'text', data: { text: ' ' } }]));
+            }
             let result;
             if (target.type === 'private') {
                 result = await callApi(account, 'send_private_msg', {
@@ -619,6 +646,13 @@ async function deliverText(ctx) {
                 };
             }
             data = result.data;
+            if (data?.message_id != null) {
+                // Store exactly the visible chunk only after the platform receipt.
+                // A context failure cannot turn an accepted send into a retry.
+                try {
+                    recordDeliveredText({ ...ctx, personaName }, result, chunk);
+                } catch { console.warn('[onebot] Delivered message context unavailable'); }
+            }
         }
         return {
             channel: 'onebot',
@@ -633,7 +667,7 @@ async function deliverText(ctx) {
 export async function sendText(ctx) {
     const target = parseTarget(ctx.to);
     const sessionKey = approvalSessionKey(target, ctx.approvalSessionKey);
-    if (!ctx.bypassApprovalBarrier && sessionKey && activeApprovalBarriers.has(sessionKey) && !isApprovalControlMessage(ctx.text)) {
+    if (ctx.waitForApproval && !ctx.bypassApprovalBarrier && sessionKey && activeApprovalBarriers.has(sessionKey) && !isApprovalControlMessage(ctx.text)) {
         try {
             const pending = await hasPendingApproval(sessionKey);
             const expected = activeApprovalBarriers.get(sessionKey);
@@ -656,19 +690,40 @@ export async function sendText(ctx) {
             console.error(`[onebot] Approval barrier check failed for ${sessionKey}: ${err instanceof Error ? err.message : String(err)}`);
         }
     }
-    return await deliverText(ctx);
+    try {
+        assertFeatureTarget(ctx.account, target.type, target.id);
+        const workspaceAgentId = ctx.workspaceAgentId ?? outboundWorkspace(ctx, target);
+        const personaName = resolvePersonaName(ctx);
+        const draft = ctx.rewritePersona === false ? ctx.text.trim() : await safeRewriteForPersona(ctx.text, {
+            model: ctx.personaModel, guestAddress: ctx.guestAddress, thinking: ctx.personaThinking,
+            instruction: ctx.personaInstruction, personaName, workspaceAgentId });
+        const formatted = formatPersonaText(draft);
+        const rendered = toOneBotPlainText(ctx.rewritePersona === false ? renderRoleFixedText(formatted, personaName) : formatted);
+        const text = ctx.guestAddress ? sanitizeGuestVocatives(rendered, ctx.guestAddress) : rendered;
+        const parts = [];
+        for (let offset = 0; offset < text.length; offset += ONEBOT_TEXT_CHUNK_LIMIT) parts.push({ type: 'text', text: text.slice(offset, offset + ONEBOT_TEXT_CHUNK_LIMIT) });
+        const delivered = await deliveryQueue().enqueue({ accountId: ctx.account.accountId ?? 'default', target: { type: target.type, id: String(target.id) },
+            feature: ctx.deliveryFeature ?? 'conversation', action: ctx.deliveryAction ?? 'chat', parts, workspaceAgentId,
+            sessionKey: ctx.approvalSessionKey, context: ctx.featureContext, dedupeKey: ctx.deliveryId,
+            operationId: ctx.operationId, approvalIds: ctx.approvalDependencies, ...(ctx.progressToken ? {progressToken:ctx.progressToken} : {}) }, {signal:ctx.signal});
+        if (delivered.state==='suppressed' && ctx.progressToken) return {channel:'onebot',suppressed:true};
+        return {...deliveryResult(delivered),...(ctx.captureRenderedText ? {renderedText:text} : {})};
+    } catch (error) { return { channel: 'onebot', error: String(error.message) }; }
 }
-export async function sendImage(account, targetType, targetId, filePath) {
-    const mediaUri = await resolveNapCatMediaUri(account, filePath, 'images');
-    const message = [
-        { type: 'image', data: { file: mediaUri } },
-    ];
+export function imageMessage(mediaUri, caption) {
+    return [{ type: 'image', data: { file: mediaUri } }, ...(caption ? [{ type: 'text', data: { text: caption } }] : [])];
+}
+export async function sendImageTransport(account, targetType, targetId, filePath, caption) {
+    assertFeatureTarget(account, targetType, targetId);
+    const mediaUri = await resolveNapCatMediaUri(account, await persistArtifact(filePath), 'images');
+    const message = imageMessage(mediaUri, caption);
     const endpoint = targetType === 'private' ? 'send_private_msg' : 'send_group_msg';
     const idField = targetType === 'private' ? 'user_id' : 'group_id';
     return ensureApiSuccess(await callApi(account, endpoint, { [idField]: targetId, message }), endpoint);
 }
-export async function sendRecord(account, targetType, targetId, filePath) {
-    const mediaUri = await resolveNapCatMediaUri(account, filePath, 'audio');
+export async function sendRecordTransport(account, targetType, targetId, filePath) {
+    assertFeatureTarget(account, targetType, targetId);
+    const mediaUri = await resolveNapCatMediaUri(account, await persistArtifact(filePath), 'audio');
     const message = [
         { type: 'record', data: { file: mediaUri } },
     ];
@@ -676,16 +731,67 @@ export async function sendRecord(account, targetType, targetId, filePath) {
     const idField = targetType === 'private' ? 'user_id' : 'group_id';
     return ensureApiSuccess(await callApi(account, endpoint, { [idField]: targetId, message }), endpoint);
 }
-export async function uploadFile(account, targetType, targetId, filePath, fileName) {
-    const mediaUri = await resolveNapCatMediaUri(account, filePath, 'files');
+export async function sendForwardTransport(account, targetType, targetId, nodes) {
+    assertFeatureTarget(account,targetType,targetId);
+    if (!Array.isArray(nodes) || !nodes.length || nodes.length>64) throw new Error('invalid forward media');
+    const login=ensureApiSuccess(await callApi(account,'get_login_info',{}),'get_login_info');
+    const selfId=String(login.data?.user_id ?? '');
+    if (!/^[1-9][0-9]{4,19}$/u.test(selfId)) throw new Error('forward sender unavailable');
+    const messages=[];
+    for (const node of nodes) {
+        if (!Array.isArray(node.media) || !node.media.length || node.media.length>160) throw new Error('invalid forward media');
+        const content=[];
+        if (typeof node.title === 'string' && node.title.trim()) {
+            const title = node.title.replace(/[\u0000-\u001f\u007f]/gu, ' ').replace(/\s+/gu, ' ').trim().slice(0, 240);
+            if (title) content.push({type:'text',data:{text:`【${title}】`}});
+        }
+        for (const media of node.media) {
+            if (!['image','video'].includes(media.type)) throw new Error('invalid forward media');
+            const file=await resolveNapCatMediaUri(account,await persistArtifact(media.path),media.type==='image'?'images':'videos');
+            content.push({type:media.type,data:{file}});
+        }
+        messages.push({type:'node',data:{nickname:ROLE_DISPLAY_NAMES.get(account.accountId ?? 'default') ?? '爱莉希雅',user_id:selfId,content}});
+    }
+    const endpoint=targetType==='private'?'send_private_forward_msg':'send_group_forward_msg';
+    return ensureApiSuccess(await callApi(account,endpoint,{[targetType==='private'?'user_id':'group_id']:targetId,messages}),endpoint);
+}
+export function matchUploadedPrivateFile(messages, {selfId, targetId, fileName, bytes, startedAt, previousIds = []}) {
+    if (!/^[1-9][0-9]{4,19}$/u.test(String(selfId)) || !/^[1-9][0-9]{4,19}$/u.test(String(targetId))) return undefined;
+    return (Array.isArray(messages) ? messages : []).find(message => {
+        if (previousIds.includes(String(message.message_id)) || !Number.isFinite(Number(message.time)) || Number(message.time)*1000 < startedAt-1000 || Number(message.time)*1000 > Date.now()+1000
+            || message.message_type !== 'private' || String(message.sender?.user_id ?? message.user_id) !== String(selfId)
+            || message.target_id != null && String(message.target_id) !== String(targetId)
+            || message.peer_id != null && String(message.peer_id) !== String(targetId)) return false;
+        return message.message?.some?.(part => part.type === 'file' && String(part.data?.name ?? part.data?.file) === fileName
+            && String(part.data?.file_size ?? part.data?.size) === String(bytes) && String(part.data?.file_id ?? '').trim());
+    });
+}
+export async function uploadFileTransport(account, targetType, targetId, filePath, fileName) {
+    assertFeatureTarget(account, targetType, targetId);
+    const mediaUri = await resolveNapCatMediaUri(account, await persistArtifact(filePath), 'files');
+    let selfId, previousIds=[];
+    if (targetType === 'private') {
+        const login=ensureApiSuccess(await callApi(account,'get_login_info',{}),'get_login_info');selfId=login.data?.user_id;
+        const history=ensureApiSuccess(await callApi(account,'get_friend_msg_history',{user_id:targetId,count:30}),'get_friend_msg_history');
+        previousIds=(history.data?.messages ?? []).map(m=>String(m.message_id));
+    }
+    const startedAt=Date.now();
     const endpoint = targetType === 'private' ? 'upload_private_file' : 'upload_group_file';
     const idField = targetType === 'private' ? 'user_id' : 'group_id';
-    return ensureApiSuccess(await callApi(account, endpoint, {
-        [idField]: targetId,
-        file: mediaUri,
-        name: fileName,
-    }), endpoint);
+    const result=ensureApiSuccess(await callApi(account, endpoint, {[idField]:targetId,file:mediaUri,name:fileName}),endpoint);
+    if (result.data?.message_id != null || targetType !== 'private') return result;
+    const bytes=(await stat(filePath)).size;
+    // LLBot upload may return no message ID even after delivering the file.
+    // Reconcile the exact new outgoing file in this peer's history; never retry upload.
+    for (let attempt=0;attempt<4;attempt++) {
+        if (attempt) await new Promise(resolve=>setTimeout(resolve,500));
+        const history=ensureApiSuccess(await callApi(account,'get_friend_msg_history',{user_id:targetId,count:30}),'get_friend_msg_history');
+        const match=matchUploadedPrivateFile(history.data?.messages,{selfId,targetId,fileName,bytes,startedAt,previousIds});
+        if (match?.message_id != null) return {...result,data:{...result.data,message_id:match.message_id}};
+    }
+    return result;
 }
+
 export async function reactToMessage(account, messageId, emojiId) {
     if (!account.httpUrl) {
         return {
@@ -728,3 +834,26 @@ export async function reactToMessage(account, messageId, emojiId) {
         };
     }
 }
+
+function outboundWorkspace(ctx, target) {
+    const roleAgentId = (ctx.account.accountId ?? 'default') === 'yuexia' ? 'onebot-yuexia' : 'main';
+    return scopedAgent({ scope: target.type === 'group' ? 'group' : 'automation', conversationId: target.type === 'group' ? String(target.id) : 'public', roleAgentId,
+        mode: String(ctx.personaModel ?? '').startsWith('grok/') ? 'nsfw' : 'normal' });
+}
+function deliveryResult(delivered) {
+    const receipt = delivered.receipt;
+    const part = receipt?.parts?.findLast(part => part.messageId || part.platformMessageId || part.id);
+    const messageId = receipt?.primaryPlatformMessageId ?? receipt?.primaryMessageId ?? receipt?.messageId ?? part?.messageId ?? part?.platformMessageId ?? part?.id;
+    return { channel: 'onebot', deliveryId: delivered.id, status: delivered.state,
+        ...(delivered.state === 'accepted' && messageId ? { messageId: String(messageId) } : { error: `投递状态：${delivered.state}，未宣称发送成功。` }) };
+}
+async function enqueueMedia(account, targetType, targetId, filePath, type, fileName, authorization = {}) {
+    const delivered = await deliveryQueue().enqueue({ accountId: account.accountId ?? 'default', target: { type: targetType, id: String(targetId) },
+        feature: authorization.feature ?? 'conversation', action: authorization.action ?? 'media', context: authorization.context, parts: [{ type, path: filePath, ...(fileName ? { fileName } : {}) }] });
+    const result = deliveryResult(delivered);
+    if (result.error) throw new Error(result.error);
+    return { status: 'ok', retcode: 0, data: { message_id: result.messageId }, deliveryId: delivered.id };
+}
+export const sendImage = (account, type, id, path, authorization) => enqueueMedia(account, type, id, path, 'image', undefined, authorization);
+export const sendRecord = (account, type, id, path, authorization) => enqueueMedia(account, type, id, path, 'record', undefined, authorization);
+export const uploadFile = (account, type, id, path, name, authorization) => enqueueMedia(account, type, id, path, 'file', name, authorization);

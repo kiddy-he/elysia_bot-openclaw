@@ -3,8 +3,30 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "modular:check": "node scripts/modular.mjs check",
+    "modular:status": "node scripts/modular.mjs status",
+    "modular:gc": "node scripts/modular.mjs gc",
+    "workspaces:preview": "node scripts/workspaces.mjs",
+    "test:simulation": "node scripts/simulate-conversations.mjs",
+    "features:check": "node scripts/features.mjs check",
+    "features:sync": "node scripts/features.mjs sync",
+    "features:matrix": "node scripts/features.mjs matrix",
     "check": "node scripts/deploy.mjs --check",
     "deploy": "node scripts/deploy.mjs --deploy",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "search-patch:check": "node scripts/patch-gemini-native-search.mjs --check",
+    "search-patch:apply": "node scripts/patch-gemini-native-search.mjs --apply",
+    "test:native": "node scripts/accept-native.mjs"
+  },
+  "dependencies": {
+    "@ikenxuan/xhshow-ts": "^1.2.0",
+    "ajv": "8.20.0",
+    "ipaddr.js": "2.5.0",
+    "qrcode-generator": "2.0.4",
+    "sharp": "0.35.5",
+    "ws": "8.21.2"
+  },
+  "engines": {
+    "node": ">=24.15.0"
   }
 }

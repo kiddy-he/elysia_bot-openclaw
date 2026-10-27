@@ -1,0 +1,371 @@
+{
+  "version": 1,
+  "unit": "milliseconds",
+  "reports": [
+    {
+      "sample": "live-timing-20261022-1",
+      "inboundAt": "2026-10-22T09:01:17.757Z",
+      "syntheticInbound": true,
+      "realLLM": true,
+      "realXhs": true,
+      "realQq": true,
+      "testHarnessFinished": true,
+      "businessOutcome": "media_delivered",
+      "classification": {
+        "outcome": "failed",
+        "decisionAtMs": 2802,
+        "networkDurationMs": null
+      },
+      "llm": {
+        "mainRoundCount": 12,
+        "mainNetworkDurationMs": 83415,
+        "reviewNetworkDurationMs": 2511,
+        "rewriteNetworkDurationMs": 17410,
+        "spans": [
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 10318,
+            "endMs": 20391,
+            "durationMs": 10073,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 23839,
+            "endMs": 33303,
+            "durationMs": 9464,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 36595,
+            "endMs": 43083,
+            "durationMs": 6488,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 45602,
+            "endMs": 53086,
+            "durationMs": 7484,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 55627,
+            "endMs": 58852,
+            "durationMs": 3225,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 61392,
+            "endMs": 73683,
+            "durationMs": 12291,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 76221,
+            "endMs": 80451,
+            "durationMs": 4230,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 82987,
+            "endMs": 90102,
+            "durationMs": 7115,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 92650,
+            "endMs": 95977,
+            "durationMs": 3327,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 98503,
+            "endMs": 102153,
+            "durationMs": 3650,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 104682,
+            "endMs": 109801,
+            "durationMs": 5119,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 122508,
+            "endMs": 133457,
+            "durationMs": 10949,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 143248,
+            "endMs": 145759,
+            "durationMs": 2511,
+            "ok": true,
+            "role": "text_review"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 155342,
+            "endMs": 172752,
+            "durationMs": 17410,
+            "ok": true,
+            "role": "persona_rewrite"
+          }
+        ]
+      },
+      "operations": [
+        {
+          "tool": "xhs_search_posts",
+          "storeState": "succeeded",
+          "startMs": 21804,
+          "endMs": 22670,
+          "durationMs": 866
+        },
+        {
+          "tool": "xhs_inspect_posts",
+          "storeState": "succeeded",
+          "startMs": 34709,
+          "endMs": 35455,
+          "durationMs": 746
+        },
+        {
+          "tool": "xhs_list_images",
+          "storeState": "succeeded",
+          "startMs": 44475,
+          "endMs": 44479,
+          "durationMs": 4
+        },
+        {
+          "tool": "xhs_list_images",
+          "storeState": "succeeded",
+          "startMs": 54491,
+          "endMs": 54494,
+          "durationMs": 3
+        },
+        {
+          "tool": "xhs_list_images",
+          "storeState": "succeeded",
+          "startMs": 60240,
+          "endMs": 60246,
+          "durationMs": 6
+        },
+        {
+          "tool": "xhs_download_images",
+          "storeState": "succeeded",
+          "startMs": 75087,
+          "endMs": 75094,
+          "durationMs": 7,
+          "backgroundJob": {
+            "state": "succeeded",
+            "startMs": 75093,
+            "endMs": 79003,
+            "durationMs": 3910,
+            "artifactCount": 9,
+            "bytes": 1194154,
+            "imageCount": 9,
+            "failureCount": 0,
+            "albumSizes": [
+              3,
+              1,
+              5
+            ]
+          }
+        },
+        {
+          "tool": "xhs_job_status",
+          "storeState": "succeeded",
+          "startMs": 81848,
+          "endMs": 81851,
+          "durationMs": 3
+        },
+        {
+          "tool": "xhs_read_artifact",
+          "storeState": "succeeded",
+          "startMs": 91513,
+          "endMs": 91522,
+          "durationMs": 9
+        },
+        {
+          "tool": "xhs_read_artifact",
+          "storeState": "succeeded",
+          "startMs": 97366,
+          "endMs": 97372,
+          "durationMs": 6
+        },
+        {
+          "tool": "xhs_read_artifact",
+          "storeState": "succeeded",
+          "startMs": 103547,
+          "endMs": 103555,
+          "durationMs": 8
+        },
+        {
+          "tool": "xhs_send_media",
+          "storeState": "succeeded",
+          "startMs": 111225,
+          "endMs": 121323,
+          "durationMs": 10098
+        }
+      ],
+      "receipts": "[omitted]",
+      "milestones": {
+        "reviewDecisionMs": 147323,
+        "finalDispatchMs": 147325,
+        "firstMediaReceiptMs": "[omitted]",
+        "finalTextReceiptMs": "[omitted]",
+        "mediaToTextMs": 53419,
+        "finalDispatchToTextRequestMs": 26936
+      },
+      "foregroundQueue": {
+        "observedCount": 11,
+        "maxWaitMs": 0
+      }
+    },
+    {
+      "sample": "live-timing-20261022-2",
+      "inboundAt": "2026-10-22T09:04:46.561Z",
+      "syntheticInbound": true,
+      "realLLM": true,
+      "realXhs": true,
+      "realQq": true,
+      "testHarnessFinished": true,
+      "businessOutcome": "challenge_required",
+      "classification": {
+        "outcome": "succeeded",
+        "decisionAtMs": 5485,
+        "networkDurationMs": 2762
+      },
+      "llm": {
+        "mainRoundCount": 3,
+        "mainNetworkDurationMs": 33518,
+        "reviewNetworkDurationMs": 2978,
+        "rewriteNetworkDurationMs": 14190,
+        "spans": [
+          {
+            "kind": "llm",
+            "operation": "request",
+            "startMs": 2723,
+            "endMs": 5484,
+            "durationMs": 2762,
+            "httpStatus": 200,
+            "role": "classification"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 10020,
+            "endMs": 16103,
+            "durationMs": 6083,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 19502,
+            "endMs": 29171,
+            "durationMs": 9669,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 32151,
+            "endMs": 49917,
+            "durationMs": 17766,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 63559,
+            "endMs": 66537,
+            "durationMs": 2978,
+            "ok": true,
+            "role": "text_review"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 75871,
+            "endMs": 90061,
+            "durationMs": 14190,
+            "ok": true,
+            "role": "persona_rewrite"
+          }
+        ]
+      },
+      "operations": [
+        {
+          "tool": "xhs_search_posts",
+          "storeState": "succeeded",
+          "startMs": 17546,
+          "endMs": 18328,
+          "durationMs": 782
+        },
+        {
+          "tool": "xhs_inspect_posts",
+          "storeState": "succeeded",
+          "startMs": 30565,
+          "endMs": 31020,
+          "durationMs": 455,
+          "resourceErrors": [
+            "challenge_required"
+          ]
+        }
+      ],
+      "receipts": "[omitted]",
+      "milestones": {
+        "reviewDecisionMs": 68077,
+        "finalDispatchMs": 68081,
+        "firstMediaReceiptMs": "[omitted]",
+        "finalTextReceiptMs": "[omitted]",
+        "mediaToTextMs": null,
+        "finalDispatchToTextRequestMs": 23502
+      },
+      "foregroundQueue": {
+        "observedCount": 2,
+        "maxWaitMs": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "recorded_at": "2026-10-21",
+  "backend": "http",
+  "browser_resident": false,
+  "session": "existing_authenticated_session",
+  "checks": {
+    "keyword_search": {
+      "status": "passed",
+      "query": "咖啡",
+      "returned_candidates": 3
+    },
+    "tag_search_mode": {
+      "status": "passed",
+      "semantic": "keyword_endpoint_with_tag_mode_marker",
+      "exact_topic_filter": "not_independently_verified"
+    },
+    "note_detail": {
+      "status": "passed",
+      "checked": [
+        "text",
+        "author",
+        "tags",
+        "interact_info",
+        "image_list"
+      ]
+    },
+    "profile": {
+      "status": "passed",
+      "checked": [
+        "basic_info",
+        "posted",
+        "liked",
+        "collected",
+        "tags"
+      ]
+    },
+    "profile_posted": {
+      "status": "passed",
+      "endpoint": "/api/sns/web/v1/user_posted"
+    },
+    "comments": {
+      "status": "blocked_by_site_challenge",
+      "http_status": 461,
+      "error": "challenge_required",
+      "automatic_bypass": false
+    },
+    "image_download": {
+      "status": "passed",
+      "integrity": "sha256_and_decoder"
+    },
+    "video_download": {
+      "status": "passed",
+      "integrity": "ffprobe_h264_mp4",
+      "artifact_bytes": 5161155
+    }
+  },
+  "privacy": "No cookie, signed URL, private response body, or raw credential is recorded."
+}

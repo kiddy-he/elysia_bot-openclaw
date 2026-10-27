@@ -1,0 +1,62 @@
+{
+  "version": "local-character-v1",
+  "referenceRoot": "/root/letu_chara_image",
+  "protagonist": "爱莉希雅",
+  "interactionProbability": 0.5,
+  "unknownCharacterWeight": 3,
+  "weightNote": "按剧情关系做的可调创作权重，并非官方亲密度数值；只在实际有可读取图片的角色之间归一化。",
+  "characters": {
+    "伊甸": {
+      "weight": 30,
+      "relationship": "熟悉且亲近的挚友，互动自然默契"
+    },
+    "芽衣": {
+      "weight": 25,
+      "relationship": "乐土旅途中彼此理解、信任与传承的伙伴"
+    },
+    "帕朵菲莉丝": {
+      "weight": 15,
+      "relationship": "亲近活泼、可以轻松玩闹的同伴"
+    },
+    "梅比乌斯": {
+      "weight": 10,
+      "relationship": "熟悉彼此、常有俏皮拌嘴的同伴"
+    },
+    "符华": {
+      "weight": 8,
+      "relationship": "温和关照、互相信任的英桀同伴"
+    },
+    "阿波尼亚": {
+      "weight": 6,
+      "relationship": "互相理解与尊重的英桀同伴"
+    },
+    "格蕾修": {
+      "weight": 6,
+      "relationship": "温柔关照的年幼同伴，仅描写适龄的日常活动"
+    },
+    "凯文": {
+      "weight": 8,
+      "relationship": "共同承担理想、互相信任的老同伴"
+    },
+    "樱": {
+      "weight": 7,
+      "relationship": "互相关照的英桀同伴"
+    },
+    "苏": {
+      "weight": 6,
+      "relationship": "平和交流、互相理解的英桀同伴"
+    },
+    "维尔薇": {
+      "weight": 7,
+      "relationship": "可以一起欣赏创作与惊喜的英桀同伴"
+    },
+    "科斯魔": {
+      "weight": 5,
+      "relationship": "受到温柔关照、略显拘谨的英桀同伴"
+    },
+    "千劫": {
+      "weight": 5,
+      "relationship": "熟悉彼此性格、保有分寸的英桀同伴"
+    }
+  }
+}

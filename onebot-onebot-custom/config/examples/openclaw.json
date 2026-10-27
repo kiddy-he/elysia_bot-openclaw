@@ -1,0 +1,40 @@
+{
+  "models": {
+    "providers": {
+      "example": {
+        "baseUrl": "https://provider.example.invalid/v1",
+        "apiKey": {
+          "source": "env",
+          "provider": "default",
+          "id": "EXAMPLE_MODEL_API_KEY"
+        },
+        "models": [
+          {
+            "id": "example-model",
+            "name": "Example model"
+          }
+        ]
+      }
+    }
+  },
+  "gateway": {
+    "auth": {
+      "mode": "token",
+      "token": {
+        "source": "env",
+        "provider": "default",
+        "id": "EXAMPLE_GATEWAY_TOKEN"
+      }
+    }
+  },
+  "channels": {
+    "onebot": {
+      "accounts": {
+        "example": {
+          "wsUrl": "${EXAMPLE_ONEBOT_WS_URL}",
+          "accessToken": "${EXAMPLE_ONEBOT_ACCESS_TOKEN}"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "enabled": false,
+  "publicLinks": true,
+  "python": "${EXAMPLE_PYTHON}",
+  "bridge": "${EXAMPLE_X_BRIDGE}",
+  "accountsDb": "${EXAMPLE_X_ACCOUNTS_DB}",
+  "proxy": "${EXAMPLE_PROXY_URL}"
+}

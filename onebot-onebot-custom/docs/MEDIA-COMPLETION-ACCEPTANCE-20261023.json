@@ -1,0 +1,140 @@
+{
+  "date": "2026-10-23",
+  "timezone": "Asia/Shanghai",
+  "baseline_production_media_to_text_ms": {
+    "x": [
+      64766,
+      69615,
+      68862
+    ],
+    "xiaohongshu": [
+      60052
+    ]
+  },
+  "baseline_text_queue_and_delivery_ms": [
+    459,
+    496,
+    629,
+    648
+  ],
+  "cases": [
+    {
+      "case": "X 关键词搜索，admin私聊",
+      "evidence": "/root/.openclaw/state/x-integration-20261023/live-fast-final-x-admin-verified/result.json",
+      "finished": true,
+      "real_llm": true,
+      "real_upstream": true,
+      "qq_delivery": "captured_only",
+      "performance": {
+        "targetMs": 60000,
+        "mediaToTextMs": 4334,
+        "inboundToTextMs": 32601,
+        "fastCompletion": true,
+        "inboundToMediaMs": 28267,
+        "withinTarget": true
+      },
+      "forward_node_types": [
+        [
+          "text",
+          "image"
+        ],
+        [
+          "text",
+          "image"
+        ]
+      ],
+      "forward_count": 1,
+      "final_text_count": 1,
+      "exact_sent_text_mirror_count": 1,
+      "full_result_in_transcript": false
+    },
+    {
+      "case": "小红书关键词搜索，guest群聊",
+      "evidence": "/root/.openclaw/state/x-integration-20261023/live-fast-final-xhs-guest-verified/result.json",
+      "finished": true,
+      "real_llm": true,
+      "real_upstream": true,
+      "qq_delivery": "captured_only",
+      "performance": {
+        "targetMs": 60000,
+        "mediaToTextMs": 1668,
+        "inboundToTextMs": 25609,
+        "fastCompletion": true,
+        "inboundToMediaMs": 23941,
+        "withinTarget": true
+      },
+      "forward_node_types": [
+        [
+          "text",
+          "image",
+          "image"
+        ],
+        [
+          "text",
+          "image",
+          "image",
+          "image",
+          "image",
+          "image",
+          "image"
+        ]
+      ],
+      "forward_count": 1,
+      "final_text_count": 1,
+      "exact_sent_text_mirror_count": 1,
+      "full_result_in_transcript": false
+    },
+    {
+      "case": "X 链接图文与视频，guest群聊",
+      "evidence": "/root/.openclaw/state/x-integration-20261023/live-fast-final-mixed-link-verified/result.json",
+      "finished": true,
+      "real_llm": true,
+      "real_upstream": true,
+      "qq_delivery": "captured_only",
+      "performance": {
+        "targetMs": 60000,
+        "mediaToTextMs": 3461,
+        "inboundToTextMs": 27182,
+        "fastCompletion": true,
+        "inboundToMediaMs": 23721,
+        "withinTarget": true
+      },
+      "forward_node_types": [
+        [
+          "text",
+          "image",
+          "video"
+        ]
+      ],
+      "forward_count": 1,
+      "final_text_count": 1,
+      "exact_sent_text_mirror_count": 1,
+      "full_result_in_transcript": true
+    }
+  ],
+  "tests": {
+    "new_tests": 13,
+    "full_node_suite_passed": true,
+    "source_files_checked": 124
+  },
+  "budgets": {
+    "post_receipt_preparation_wait_ms": "[omitted]",
+    "total_preparation_ms": 15000
+  },
+  "notes": [
+    "基线为历史生产回执，验收为隔离入站与捕获QQ发送，不是控制变量的真实QQ上传对照。",
+    "最新混合媒体验收确认完整工具结果先写入会话，再结束后续主模型生成。",
+    "较早两轮关键词验收先于工具结果返回时序微调；其实际回复镜像已验证。"
+  ],
+  "deployment": {
+    "service": "openclaw-gateway.service",
+    "state": "active/running",
+    "pid": 107051,
+    "accounts_reconnected": [
+      "default",
+      "yuexia"
+    ],
+    "changed_runtime_modules_verified": 14,
+    "no_active_business_operations_or_deliveries_before_restart": true
+  }
+}

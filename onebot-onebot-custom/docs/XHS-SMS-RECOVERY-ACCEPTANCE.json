@@ -1,0 +1,19 @@
+{
+  "checked_at": "2026-10-22T16:34:34+08:00",
+  "feature": "xhs_sms_recovery",
+  "enabled": true,
+  "plugin_test_count": 261,
+  "new_recovery_tests": 11,
+  "standalone_sms_tests": 9,
+  "skill_validation": "passed_project_and_installed",
+  "deployment_source_files": 115,
+  "gateway_restart": "2026-10-22T16:33:01+08:00",
+  "accounts_connected": [
+    "default",
+    "yuexia"
+  ],
+  "live_sms_requested": false,
+  "live_sms_login": "not_exercised_this_change",
+  "phone_configuration": "[omitted]",
+  "scope": "coordinator and simulated recovery verified; real SMS and recovered delivery await genuine trigger/admin input"
+}

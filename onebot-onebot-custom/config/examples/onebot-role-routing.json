@@ -1,0 +1,23 @@
+{
+  "groups": {
+    "700000002": {
+      "roles": [
+        "elysia"
+      ],
+      "requireMention": true
+    }
+  },
+  "adminIds": [
+    "700000001"
+  ],
+  "roles": {
+    "elysia": {
+      "accountId": "example",
+      "agentId": "example-agent",
+      "selfIds": [
+        "700000003"
+      ],
+      "displayName": "Example bot"
+    }
+  }
+}

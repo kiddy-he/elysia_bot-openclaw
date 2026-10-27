@@ -1,0 +1,460 @@
+{
+  "version": 1,
+  "unit": "milliseconds",
+  "reports": [
+    {
+      "sample": "live-fast-20261022-1",
+      "inboundAt": "2026-10-22T11:39:06.264Z",
+      "syntheticInbound": true,
+      "realLLM": true,
+      "realXhs": true,
+      "realQq": true,
+      "testHarnessFinished": true,
+      "performance": {
+        "targetMs": 60000,
+        "inboundToMediaMs": 29265,
+        "withinTarget": true
+      },
+      "businessOutcome": "media_delivered",
+      "classification": {
+        "outcome": "succeeded",
+        "decisionAtMs": 4527,
+        "networkDurationMs": 1918
+      },
+      "llm": {
+        "mainRoundCount": 2,
+        "mainNetworkDurationMs": 18862,
+        "reviewNetworkDurationMs": 2478,
+        "rewriteNetworkDurationMs": 0,
+        "spans": [
+          {
+            "kind": "llm",
+            "operation": "request",
+            "startMs": 2607,
+            "endMs": 4525,
+            "durationMs": 1918,
+            "httpStatus": 200,
+            "role": "classification"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 10052,
+            "endMs": 16999,
+            "durationMs": 6947,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 30427,
+            "endMs": 42342,
+            "durationMs": 11915,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 51777,
+            "endMs": 54255,
+            "durationMs": 2478,
+            "ok": true,
+            "role": "text_review"
+          }
+        ]
+      },
+      "operations": [
+        {
+          "tool": "xhs_media_workflow",
+          "storeState": "succeeded",
+          "startMs": 18460,
+          "endMs": 29273,
+          "durationMs": 10813,
+          "workflow": {
+            "elapsedMs": 10809,
+            "deliveryStatus": "delivered",
+            "mediaCount": 10,
+            "postCount": 3,
+            "stages": [
+              {
+                "operation": "search",
+                "calls": 1,
+                "elapsedMs": 807
+              },
+              {
+                "operation": "inspect",
+                "calls": 1,
+                "elapsedMs": 767
+              },
+              {
+                "operation": "list_images",
+                "calls": 3,
+                "elapsedMs": 7
+              },
+              {
+                "operation": "download_images",
+                "calls": 1,
+                "elapsedMs": 4
+              },
+              {
+                "operation": "job_status",
+                "calls": 15,
+                "elapsedMs": 11
+              },
+              {
+                "operation": "artifact",
+                "calls": 3,
+                "elapsedMs": 10
+              },
+              {
+                "operation": "send_media",
+                "calls": 1,
+                "elapsedMs": 5698
+              }
+            ],
+            "backgroundJobs": [
+              {
+                "state": "succeeded",
+                "artifactCount": 10,
+                "bytes": 1774572,
+                "failureCount": 0,
+                "albumSizes": [
+                  3,
+                  6,
+                  1
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "tool": "tts_synthesize",
+          "storeState": "running",
+          "startMs": 56291,
+          "endMs": 56292,
+          "durationMs": 1
+        }
+      ],
+      "receipts": "[omitted]",
+      "milestones": {
+        "reviewDecisionMs": 55833,
+        "finalDispatchMs": 55836,
+        "firstMediaReceiptMs": "[omitted]",
+        "planningRoundsBeforeMedia": 1,
+        "finalTextReceiptMs": "[omitted]",
+        "mediaToTextMs": 27021,
+        "finalDispatchToTextRequestMs": 13
+      },
+      "foregroundQueue": {
+        "observedCount": 24,
+        "maxWaitMs": 1
+      }
+    },
+    {
+      "sample": "live-fast-20261022-2",
+      "inboundAt": "2026-10-22T11:41:35.568Z",
+      "syntheticInbound": true,
+      "realLLM": true,
+      "realXhs": true,
+      "realQq": true,
+      "testHarnessFinished": true,
+      "performance": {
+        "targetMs": 60000,
+        "inboundToMediaMs": 63000,
+        "withinTarget": false
+      },
+      "businessOutcome": "media_delivered",
+      "classification": {
+        "outcome": "succeeded",
+        "decisionAtMs": 4320,
+        "networkDurationMs": 1864
+      },
+      "llm": {
+        "mainRoundCount": 2,
+        "mainNetworkDurationMs": 13051,
+        "reviewNetworkDurationMs": 2502,
+        "rewriteNetworkDurationMs": 10610,
+        "spans": [
+          {
+            "kind": "llm",
+            "operation": "request",
+            "startMs": 2454,
+            "endMs": 4318,
+            "durationMs": 1864,
+            "httpStatus": 200,
+            "role": "classification"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 9950,
+            "endMs": 14385,
+            "durationMs": 4435,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 64158,
+            "endMs": 72774,
+            "durationMs": 8616,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 82835,
+            "endMs": 85337,
+            "durationMs": 2502,
+            "ok": true,
+            "role": "text_review"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 94746,
+            "endMs": 105356,
+            "durationMs": 10610,
+            "ok": true,
+            "role": "persona_rewrite"
+          }
+        ]
+      },
+      "operations": [
+        {
+          "tool": "xhs_media_workflow",
+          "storeState": "succeeded",
+          "startMs": 15821,
+          "endMs": 63007,
+          "durationMs": 47186,
+          "workflow": {
+            "elapsedMs": 47183,
+            "deliveryStatus": "delivered",
+            "mediaCount": 27,
+            "postCount": 3,
+            "stages": [
+              {
+                "operation": "search",
+                "calls": 1,
+                "elapsedMs": 927
+              },
+              {
+                "operation": "inspect",
+                "calls": 1,
+                "elapsedMs": 926
+              },
+              {
+                "operation": "list_images",
+                "calls": 3,
+                "elapsedMs": 15
+              },
+              {
+                "operation": "download_images",
+                "calls": 1,
+                "elapsedMs": 6
+              },
+              {
+                "operation": "job_status",
+                "calls": 43,
+                "elapsedMs": 35
+              },
+              {
+                "operation": "artifact",
+                "calls": 3,
+                "elapsedMs": 17
+              },
+              {
+                "operation": "send_media",
+                "calls": 1,
+                "elapsedMs": 34756
+              }
+            ],
+            "backgroundJobs": [
+              {
+                "state": "succeeded",
+                "artifactCount": 27,
+                "bytes": 9141572,
+                "failureCount": 0,
+                "albumSizes": [
+                  13,
+                  5,
+                  9
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "receipts": "[omitted]",
+      "milestones": {
+        "reviewDecisionMs": 86892,
+        "finalDispatchMs": 86896,
+        "firstMediaReceiptMs": "[omitted]",
+        "planningRoundsBeforeMedia": 1,
+        "finalTextReceiptMs": "[omitted]",
+        "mediaToTextMs": 44412,
+        "finalDispatchToTextRequestMs": 20012
+      },
+      "foregroundQueue": {
+        "observedCount": 52,
+        "maxWaitMs": 1
+      }
+    },
+    {
+      "sample": "live-fast-20261022-group",
+      "inboundAt": "2026-10-22T11:44:02.365Z",
+      "syntheticInbound": true,
+      "realLLM": true,
+      "realXhs": true,
+      "realQq": false,
+      "testHarnessFinished": true,
+      "performance": {
+        "targetMs": 60000,
+        "inboundToMediaMs": 25617,
+        "withinTarget": true
+      },
+      "businessOutcome": "media_delivered",
+      "classification": {
+        "outcome": "succeeded",
+        "decisionAtMs": 5882,
+        "networkDurationMs": 2673
+      },
+      "llm": {
+        "mainRoundCount": 2,
+        "mainNetworkDurationMs": 15491,
+        "reviewNetworkDurationMs": 2944,
+        "rewriteNetworkDurationMs": 15607,
+        "spans": [
+          {
+            "kind": "llm",
+            "operation": "request",
+            "startMs": 3207,
+            "endMs": 5880,
+            "durationMs": 2673,
+            "httpStatus": 200,
+            "role": "classification"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 12135,
+            "endMs": 18886,
+            "durationMs": 6751,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 26763,
+            "endMs": 35503,
+            "durationMs": 8740,
+            "ok": true,
+            "role": "main"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 45089,
+            "endMs": 48033,
+            "durationMs": 2944,
+            "ok": true,
+            "role": "text_review"
+          },
+          {
+            "kind": "llm",
+            "operation": "fetch",
+            "startMs": 57477,
+            "endMs": 73084,
+            "durationMs": 15607,
+            "ok": true,
+            "role": "persona_rewrite"
+          }
+        ]
+      },
+      "operations": [
+        {
+          "tool": "xhs_media_workflow",
+          "storeState": "succeeded",
+          "startMs": 20298,
+          "endMs": 25623,
+          "durationMs": 5325,
+          "workflow": {
+            "elapsedMs": 5321,
+            "deliveryStatus": "delivered",
+            "mediaCount": 10,
+            "postCount": 3,
+            "stages": [
+              {
+                "operation": "search",
+                "calls": 1,
+                "elapsedMs": 896
+              },
+              {
+                "operation": "inspect",
+                "calls": 1,
+                "elapsedMs": 780
+              },
+              {
+                "operation": "list_images",
+                "calls": 3,
+                "elapsedMs": 7
+              },
+              {
+                "operation": "download_images",
+                "calls": 1,
+                "elapsedMs": 4
+              },
+              {
+                "operation": "job_status",
+                "calls": 14,
+                "elapsedMs": 11
+              },
+              {
+                "operation": "artifact",
+                "calls": 3,
+                "elapsedMs": 11
+              },
+              {
+                "operation": "send_media",
+                "calls": 1,
+                "elapsedMs": 359
+              }
+            ],
+            "backgroundJobs": [
+              {
+                "state": "succeeded",
+                "artifactCount": 10,
+                "bytes": 1774572,
+                "failureCount": 0,
+                "albumSizes": [
+                  3,
+                  6,
+                  1
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "receipts": "[omitted]",
+      "milestones": {
+        "reviewDecisionMs": 49606,
+        "finalDispatchMs": 49608,
+        "firstMediaReceiptMs": "[omitted]",
+        "planningRoundsBeforeMedia": 1,
+        "finalTextReceiptMs": "[omitted]",
+        "mediaToTextMs": 49032,
+        "finalDispatchToTextRequestMs": null
+      },
+      "foregroundQueue": {
+        "observedCount": 23,
+        "maxWaitMs": 1
+      }
+    }
+  ]
+}
